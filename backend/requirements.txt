@@ -1,28 +1,28 @@
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
-
 python-multipart==0.0.20
-
 pydantic==2.11.7
 pydantic-settings==2.10.1
-
 python-dotenv==1.1.1
 
-pymongo==4.10.1
+# MongoDB Atlas async & sync integration drivers
+pymongo==4.17.0
+motor==3.7.1
+dnspython==2.8.0
+
+# AI & Machine Learning
 google-genai==0.1.1
 
+# OCR & Document Processing
 pillow==11.3.0
-opencv-python==4.12.0.88
+opencv-python-headless==5.0.0.93
 numpy==2.2.6
-
-PyMuPDF==1.26.3
+PyMuPDF==1.28.0
 pdfplumber==0.11.7
+paddleocr==2.7.3
+paddlepaddle==2.6.2
 
-paddleocr==3.1.0
-paddlepaddle==3.1.1
-
+# Data Processing & Utilities
 pandas==2.3.1
-
 rapidfuzz==3.13.0
-
 regex==2025.7.34

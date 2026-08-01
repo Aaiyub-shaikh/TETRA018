@@ -1,11 +1,29 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes.audit import router as audit_router
+from fastapi.staticfiles import StaticFiles
+
+from app.core.config import settings
+from app.api.router import api_router
+from app.database.mongodb import init_mongodb, close_mongodb
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize MongoDB connection on startup
+    init_mongodb()
+    yield
+    # Close MongoDB connection on shutdown
+    close_mongodb()
 
 app = FastAPI(
-    title="AI-Powered Invoice Risk Scanner - Audit Engine API",
-    description="Backend API for invoice risk calculation, ledger/vendor master cross-validation, and Gemini AI explanation generation.",
-    version="1.0.0"
+    title=settings.PROJECT_NAME,
+    description="AI-Powered Invoice Risk Scanner - Full Ingestion, OCR & Audit Engine API",
+    version="1.0.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configure CORS for Next.js frontend integration
@@ -17,14 +35,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Audit Router
-app.include_router(audit_router)
+# Include main API router under settings.API_V1_STR ("/api")
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Also mount api_router without prefix so /api/v1/audit works seamlessly
+app.include_router(api_router)
+
+# Mount upload directory as static files to allow access to scan images/PDFs
+if os.path.exists(settings.UPLOAD_DIR):
+    app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 @app.get("/", tags=["Root"])
 def root():
     return {
-        "message": "AI-Powered Invoice Risk Scanner - Audit Engine API",
+        "message": "AI-Powered Invoice Risk Scanner API",
         "status": "online",
+        "service": settings.PROJECT_NAME,
+        "version": "1.0.0",
         "docs": "/docs",
         "health": "/health",
         "auditEndpoint": "/api/v1/audit/{invoice_number}"
@@ -34,7 +61,7 @@ def root():
 def health_check():
     return {
         "status": "healthy",
-        "service": "Invoice Risk Scanner Audit Engine",
+        "service": settings.PROJECT_NAME,
         "version": "1.0.0"
     }
 
