@@ -122,12 +122,25 @@ async def run_risk_engine(fields: dict) -> dict:
     # Compute final risk score
     risk_score, risk_level, confidence = compute_risk_score(flags)
 
+    # 8. Generate Gemini AI Forensic Audit Narrative
+    summary = ""
+    ai_explanation = ""
+    try:
+        from app.services.gemini_service import generate_ai_explanation
+        summary, ai_explanation = generate_ai_explanation(fields, flags, risk_score, risk_level)
+    except Exception as err:
+        logger.warning(f"Failed to generate Gemini AI narrative: {err}")
+        ai_explanation = f"Evaluated invoice with risk score of {risk_score}% ({risk_level} Risk). Detected {len(flags)} exception(s)."
+        summary = f"{risk_level} Risk Invoice Analysis"
+
     return {
         "risk_score": risk_score,
         "risk_level": risk_level,
         "confidence": confidence,
         "flags": flags,
         "flag_count": len(flags),
+        "summary": summary,
+        "ai_explanation": ai_explanation,
         "validation_details": {
             "gst": gst_result,
             "duplicate": dup_result,
@@ -137,3 +150,4 @@ async def run_risk_engine(fields: dict) -> dict:
             "ledger": ledger_result,
         }
     }
+

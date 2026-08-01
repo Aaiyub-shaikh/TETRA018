@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database.mongodb import get_database
+from app.services.risk.risk_engine import run_risk_engine
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
 from io import BytesIO, StringIO
@@ -193,13 +194,24 @@ async def get_invoice(invoice_id: str):
             except Exception:
                 pass
         if not doc:
+            doc = await db["invoices"].find_one({"filename": {"$regex": invoice_id, "$options": "i"}}, {"_id": 0})
+        if not doc:
             raise HTTPException(status_code=404, detail="Invoice not found")
+        
+        # Enrich on-the-fly if ai_explanation or summary is missing
+        if not doc.get("ai_explanation") or not doc.get("summary"):
+            try:
+                from app.services.gemini_service import generate_ai_explanation
+                exceptions = doc.get("exceptions", [])
+                score = doc.get("risk_score", 0)
+                level = doc.get("risk_level", "Low")
+                summary, ai_explanation = generate_ai_explanation(doc, exceptions, score, level)
+                doc["summary"] = summary
+                doc["ai_explanation"] = ai_explanation
+            except Exception:
+                pass
 
-        # Always convert ObjectId to string
-        if "_id" in doc:
-            doc["_id"] = str(doc["_id"])
         return doc
-    except HTTPException:
-        raise
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
