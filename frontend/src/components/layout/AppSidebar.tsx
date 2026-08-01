@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -16,12 +16,14 @@ import {
   LogOut, 
   Upload,
   ScanLine,
+  X
 } from 'lucide-react';
 import Logo from '@/components/common/Logo';
 
 export const AppSidebar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const [showIssuesBadge, setShowIssuesBadge] = useState(true);
 
   const menuItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -85,8 +87,8 @@ export const AppSidebar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Bottom Profile and Logout Actions */}
-      <div className="border-t border-slate-100 p-4 space-y-1">
+      {/* Bottom Profile, Issues Badge and Logout Actions */}
+      <div className="border-t border-slate-100 p-4 space-y-2">
         {bottomItems.map((item) => {
           const isActive = pathname.startsWith('/settings') && pathname.includes('tab=profile');
           const Icon = item.icon;
@@ -107,13 +109,37 @@ export const AppSidebar: React.FC = () => {
           );
         })}
 
+        {/* Floating Red Issues Pill as shown in screenshot */}
+        {showIssuesBadge && (
+          <div className="pt-1">
+            <button
+              onClick={() => router.push('/risk')}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-full bg-rose-600 text-white hover:bg-rose-700 shadow-md text-xs font-bold transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-rose-600 font-extrabold text-[10px]">
+                  N
+                </span>
+                <span>11 Issues</span>
+              </div>
+              <X
+                className="h-3.5 w-3.5 text-rose-200 hover:text-white transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowIssuesBadge(false);
+                }}
+              />
+            </button>
+          </div>
+        )}
+
         <button
           onClick={() => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             router.push('/login');
           }}
-          className="group flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50/50 transition-all duration-200 cursor-pointer text-left"
+          className="group flex w-full items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50/50 transition-all duration-200 cursor-pointer text-left"
         >
           <LogOut className="h-4.5 w-4.5 text-rose-400 group-hover:text-rose-600" />
           <span>Logout</span>

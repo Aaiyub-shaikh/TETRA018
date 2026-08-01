@@ -13,13 +13,69 @@ router = APIRouter()
 
 
 @router.get("/invoices", summary="List all processed invoices")
-async def list_invoices():
+async def list_invoices(
+    search: str = None,
+    status: str = None,
+    risk: str = None,
+    vendor: str = None,
+    date: str = None,
+    limit: int = 100
+):
     db = get_database()
     if db is None:
         return {"invoices": [], "total": 0}
     try:
-        cursor = db["invoices"].find({}).sort("invoiceDate", -1)
-        invoices = await cursor.to_list(length=100)
+        query = {}
+        filters_list = []
+
+        if status and status != "ALL":
+            filters_list.append({
+                "$or": [
+                    {"status": {"$regex": f"^{status}$", "$options": "i"}},
+                    {"exceptions.check": {"$regex": status, "$options": "i"}}
+                ]
+            })
+
+        if risk and risk != "ALL":
+            risk_pattern = {"$regex": f"^{risk}$", "$options": "i"}
+            filters_list.append({
+                "$or": [
+                    {"riskLevel": risk_pattern},
+                    {"risk_level": risk_pattern}
+                ]
+            })
+
+        if vendor:
+            vendor_regex = {"$regex": vendor, "$options": "i"}
+            filters_list.append({
+                "$or": [
+                    {"vendor": vendor_regex},
+                    {"vendorName": vendor_regex}
+                ]
+            })
+
+        if search:
+            search_regex = {"$regex": search, "$options": "i"}
+            filters_list.append({
+                "$or": [
+                    {"invoiceNumber": search_regex},
+                    {"invoice_number": search_regex},
+                    {"invoiceNo": search_regex},
+                    {"vendor": search_regex},
+                    {"vendorName": search_regex},
+                    {"gstin": search_regex},
+                    {"vendor_gstin": search_regex}
+                ]
+            })
+
+        if filters_list:
+            if len(filters_list) == 1:
+                query = filters_list[0]
+            else:
+                query = {"$and": filters_list}
+
+        cursor = db["invoices"].find(query).sort("invoiceDate", -1).limit(limit)
+        invoices = await cursor.to_list(length=limit)
         # Convert ObjectId to string for JSON serialization
         for inv in invoices:
             if "_id" in inv:
