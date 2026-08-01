@@ -3,9 +3,15 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
+<<<<<<< Updated upstream
 from typing import Any, Dict, Optional, Tuple
 
 from fastapi import HTTPException
+=======
+from typing import Any, Dict, Optional
+
+from fastapi import HTTPException, UploadFile
+>>>>>>> Stashed changes
 from fastapi_mail import MessageSchema, MessageType
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -20,6 +26,7 @@ from app.database.mongodb import get_database
 logger = logging.getLogger("app.services.email")
 
 
+<<<<<<< Updated upstream
 def enrich_invoice_data(invoice_doc: Dict[str, Any], audit_doc: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Enriches a raw invoice MongoDB document with audit results,
@@ -147,6 +154,8 @@ def enrich_invoice_data(invoice_doc: Dict[str, Any], audit_doc: Optional[Dict[st
     }
 
 
+=======
+>>>>>>> Stashed changes
 class EmailService:
     def __init__(self) -> None:
         self.template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates", "email")
@@ -160,12 +169,19 @@ class EmailService:
             raise ValueError("Invalid email")
         return email.strip().lower()
 
+<<<<<<< Updated upstream
     def _build_pdf_bytes(self, data: Dict[str, Any]) -> bytes:
+=======
+    def _build_pdf_bytes(self, invoice_doc: Dict[str, Any]) -> bytes:
+>>>>>>> Stashed changes
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
 
+<<<<<<< Updated upstream
         # Header
+=======
+>>>>>>> Stashed changes
         p.setFillColorRGB(0.24, 0.03, 0.33)
         p.rect(0, height - 60, width, 60, fill=True, stroke=False)
         p.setFillColorRGB(1, 1, 1)
@@ -173,6 +189,7 @@ class EmailService:
         p.drawString(50, height - 38, "TETRA — Invoice Risk Analysis Report")
 
         y = height - 90
+<<<<<<< Updated upstream
 
         # Invoice details section
         p.setFillColorRGB(0, 0, 0)
@@ -234,6 +251,35 @@ class EmailService:
             ("Status", data["status"]),
         ]
         for label, value in risk_fields:
+=======
+        p.setFillColorRGB(0, 0, 0)
+        p.setFont("Helvetica-Bold", 13)
+        invoice_number = invoice_doc.get("invoiceNumber") or invoice_doc.get("invoice_number") or invoice_doc.get("invoiceNo") or "N/A"
+        p.drawString(50, y, f"Invoice Number: {invoice_number}")
+        y -= 25
+
+        field_map = [
+            ("invoiceNumber", "Invoice Number"),
+            ("invoice_number", "Invoice Number"),
+            ("invoiceNo", "Invoice Number"),
+            ("vendor", "Vendor"),
+            ("vendorName", "Vendor"),
+            ("invoiceDate", "Invoice Date"),
+            ("invoice_date", "Invoice Date"),
+            ("riskLevel", "Risk Level"),
+            ("risk_level", "Risk Level"),
+            ("riskScore", "Risk Score"),
+            ("risk_score", "Risk Score"),
+            ("confidence", "Confidence"),
+            ("status", "Status"),
+        ]
+
+        p.setFont("Helvetica", 11)
+        for field, label in field_map:
+            value = invoice_doc.get(field)
+            if value is None:
+                continue
+>>>>>>> Stashed changes
             p.setFont("Helvetica-Bold", 10)
             p.drawString(50, y, f"{label}:")
             p.setFont("Helvetica", 10)
@@ -243,38 +289,57 @@ class EmailService:
                 p.showPage()
                 y = height - 60
 
+<<<<<<< Updated upstream
         # Exceptions section
         if data["exceptions"]:
+=======
+        if invoice_doc.get("exceptions"):
+>>>>>>> Stashed changes
             y -= 12
             p.setFont("Helvetica-Bold", 11)
             p.drawString(50, y, "Detected Anomalies:")
             y -= 16
             p.setFont("Helvetica", 10)
+<<<<<<< Updated upstream
             for flag in data["exceptions"]:
                 check = flag.get("check") or ""
                 severity = flag.get("severity") or ""
                 detail = flag.get("detail") or ""
                 line = f"[{severity}] {check}: {detail}" if check else detail
                 p.drawString(50, y, f"- {line}")
+=======
+            for flag in invoice_doc.get("exceptions", []):
+                detail = flag.get("detail") or flag.get("check") or ""
+                p.drawString(50, y, f"- {detail}")
+>>>>>>> Stashed changes
                 y -= 14
                 if y < 60:
                     p.showPage()
                     y = height - 60
 
+<<<<<<< Updated upstream
         # Gemini Risk Summary
         if data["risk_summary"]:
+=======
+        if invoice_doc.get("risk_summary"):
+>>>>>>> Stashed changes
             y -= 20
             p.setFont("Helvetica-Bold", 11)
             p.drawString(50, y, "Risk Summary:")
             y -= 14
             p.setFont("Helvetica", 10)
+<<<<<<< Updated upstream
             for line in str(data["risk_summary"]).splitlines():
+=======
+            for line in str(invoice_doc.get("risk_summary")).splitlines():
+>>>>>>> Stashed changes
                 p.drawString(50, y, line)
                 y -= 14
                 if y < 60:
                     p.showPage()
                     y = height - 60
 
+<<<<<<< Updated upstream
         # Gemini Analysis
         if data["gemini_analysis"]:
             y -= 20
@@ -292,11 +357,28 @@ class EmailService:
 
         # Recommendations
         if data["recommendations"]:
+=======
+        if invoice_doc.get("gemini_analysis"):
+            y -= 20
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(50, y, "AI Analysis:")
+            y -= 14
+            p.setFont("Helvetica", 10)
+            for line in str(invoice_doc.get("gemini_analysis")).splitlines():
+                p.drawString(50, y, line)
+                y -= 14
+                if y < 60:
+                    p.showPage()
+                    y = height - 60
+
+        if invoice_doc.get("recommendations"):
+>>>>>>> Stashed changes
             y -= 20
             p.setFont("Helvetica-Bold", 11)
             p.drawString(50, y, "Recommendations:")
             y -= 14
             p.setFont("Helvetica", 10)
+<<<<<<< Updated upstream
             for line in str(data["recommendations"]).splitlines():
                 if line.strip():
                     p.drawString(50, y, line.strip())
@@ -306,6 +388,15 @@ class EmailService:
                         y = height - 60
 
         # Footer
+=======
+            for line in str(invoice_doc.get("recommendations")).splitlines():
+                p.drawString(50, y, line)
+                y -= 14
+                if y < 60:
+                    p.showPage()
+                    y = height - 60
+
+>>>>>>> Stashed changes
         p.setFont("Helvetica-Oblique", 10)
         p.drawString(50, max(70, y - 20), "Prepared by TETRA AI Risk Scanner")
 
@@ -313,6 +404,7 @@ class EmailService:
         buffer.seek(0)
         return buffer.getvalue()
 
+<<<<<<< Updated upstream
     def _render_html_template(self, data: Dict[str, Any], recipient: str) -> str:
         anomaly_summary = (
             "No anomalies detected."
@@ -339,6 +431,31 @@ class EmailService:
             "risk_summary": data["risk_summary"],
             "gemini_analysis": data["gemini_analysis"],
             "recommendations": data["recommendations"],
+=======
+    def _render_html_template(self, invoice_doc: Dict[str, Any], audit_doc: Optional[Dict[str, Any]], recipient: str) -> str:
+        invoice_number = invoice_doc.get("invoiceNumber") or invoice_doc.get("invoice_number") or invoice_doc.get("invoiceNo") or "N/A"
+        vendor = invoice_doc.get("vendorName") or invoice_doc.get("vendor") or "N/A"
+        invoice_date = invoice_doc.get("invoiceDate") or invoice_doc.get("invoice_date") or "N/A"
+        risk_score = invoice_doc.get("riskScore") or invoice_doc.get("risk_score") or 0
+        risk_level = invoice_doc.get("riskLevel") or invoice_doc.get("risk_level") or "Low"
+        confidence = invoice_doc.get("confidence") or (audit_doc or {}).get("risk", {}).get("confidence") or 0
+        anomalies = invoice_doc.get("exceptions") or (audit_doc or {}).get("exceptions") or []
+        anomaly_summary = "No anomalies detected." if not anomalies else ", ".join([item.get("detail") or item.get("check") or "anomaly" for item in anomalies[:4]])
+        risk_summary = invoice_doc.get("risk_summary") or (audit_doc or {}).get("risk_summary") or invoice_doc.get("summary") or ""
+        gemini_analysis = invoice_doc.get("gemini_analysis") or (audit_doc or {}).get("gemini_analysis") or invoice_doc.get("aiExplanation") or ""
+        recommendations = invoice_doc.get("recommendations") or (audit_doc or {}).get("recommendations") or ""
+        context = {
+            "invoice_number": invoice_number,
+            "vendor": vendor,
+            "invoice_date": invoice_date,
+            "risk_score": risk_score,
+            "risk_level": risk_level,
+            "confidence": confidence,
+            "summary": anomaly_summary,
+            "risk_summary": risk_summary,
+            "gemini_analysis": gemini_analysis,
+            "recommendations": recommendations,
+>>>>>>> Stashed changes
             "recipient": recipient,
             "message": "Please find the attached Invoice Risk Analysis Report.",
         }
@@ -351,7 +468,10 @@ class EmailService:
         if db is None:
             raise HTTPException(status_code=500, detail="Database not initialized")
 
+<<<<<<< Updated upstream
         # ── Fetch invoice document ─────────────────────────────────────────────
+=======
+>>>>>>> Stashed changes
         invoice_doc = None
         try:
             invoice_obj_id = ObjectId(invoice_id)
@@ -371,6 +491,7 @@ class EmailService:
         if not invoice_doc:
             raise HTTPException(status_code=404, detail="Invoice not found")
 
+<<<<<<< Updated upstream
         # ── Fetch matching audit result ────────────────────────────────────────
         audit_doc = await db["audit_results"].find_one({
             "filename": invoice_doc.get("fileName") or invoice_doc.get("filename")
@@ -389,6 +510,21 @@ class EmailService:
         )
         message = MessageSchema(
             subject=f"Invoice Risk Analysis Report — {data['invoice_number']}",
+=======
+        audit_doc = await db["audit_results"].find_one({"filename": invoice_doc.get("fileName") or invoice_doc.get("filename")})
+        if not audit_doc:
+            logger.warning("Audit result not found for invoice %s; continuing with invoice metadata.", invoice_id)
+
+        pdf_bytes = self._build_pdf_bytes(invoice_doc)
+        html_body = self._render_html_template(invoice_doc, audit_doc, recipient)
+
+        attachment = StarletteUploadFile(
+            filename="invoice_report.pdf",
+            file=BytesIO(pdf_bytes),
+        )
+        message = MessageSchema(
+            subject="Invoice Risk Analysis Report",
+>>>>>>> Stashed changes
             recipients=[recipient],
             body=html_body,
             subtype=MessageType.html,
@@ -405,7 +541,11 @@ class EmailService:
             logger.exception("Failed to send email report for invoice %s", invoice_id)
             await db["email_history"].insert_one({
                 "invoice_id": invoice_id,
+<<<<<<< Updated upstream
                 "invoice_number": data["invoice_number"],
+=======
+                "invoice_number": invoice_doc.get("invoiceNumber") or invoice_doc.get("invoice_number") or invoice_doc.get("invoiceNo"),
+>>>>>>> Stashed changes
                 "recipient": recipient,
                 "sent_at": datetime.utcnow().isoformat(),
                 "status": "failed",
@@ -414,7 +554,11 @@ class EmailService:
 
         await db["email_history"].insert_one({
             "invoice_id": invoice_id,
+<<<<<<< Updated upstream
             "invoice_number": data["invoice_number"],
+=======
+            "invoice_number": invoice_doc.get("invoiceNumber") or invoice_doc.get("invoice_number") or invoice_doc.get("invoiceNo"),
+>>>>>>> Stashed changes
             "recipient": recipient,
             "sent_at": datetime.utcnow().isoformat(),
             "status": status,

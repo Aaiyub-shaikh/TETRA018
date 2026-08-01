@@ -239,6 +239,37 @@ export default function ResultPage() {
         </div>
       </div>
 
+<<<<<<< Updated upstream
+=======
+      {(risk_summary || gemini_analysis || recommendations || ai_summary || ai_explanation) && (
+        <div className="rounded-2xl border border-[#3E0856]/10 bg-linear-to-br from-[#3E0856]/5 to-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3E0856]/10 text-[#3E0856] border border-[#3E0856]/10">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-slate-800 tracking-tight">AI Audit Summary</h3>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Gemini-generated explanation for this invoice
+              </p>
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm space-y-3">
+                {risk_summary && <p className="text-sm font-semibold text-slate-800">{risk_summary}</p>}
+                {(gemini_analysis || ai_explanation) && (
+                  <p className="mt-2 text-sm leading-6 text-slate-600 whitespace-pre-wrap">{gemini_analysis || ai_explanation}</p>
+                )}
+                {recommendations && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Recommendations</p>
+                    <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{recommendations}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+>>>>>>> Stashed changes
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* ── LEFT: Invoice Details Card ─────────────────────────────── */}

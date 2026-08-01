@@ -123,8 +123,11 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "risk_score": risk_result.get("risk_score", 0.0),
                 "risk_level": risk_result.get("risk_level", "Low"),
                 "confidence": risk_result.get("confidence", 100.0),
+<<<<<<< Updated upstream
                 "summary": risk_result.get("summary", ""),
                 "ai_explanation": risk_result.get("ai_explanation", ""),
+=======
+>>>>>>> Stashed changes
                 "risk": {
                     "risk_score": risk_result.get("risk_score", 0.0),
                     "risk_level": risk_result.get("risk_level", "Low"),
@@ -263,6 +266,7 @@ async def upload_invoice(file: UploadFile = File(...)):
             "confidence": risk_result.get("confidence", 100.0),
             "flags": risk_result.get("flags", []),
             "flag_count": risk_result.get("flag_count", 0),
+<<<<<<< Updated upstream
                 "summary": risk_result.get("summary", ""),
                 "ai_explanation": risk_result.get("ai_explanation", ""),
             },
@@ -270,3 +274,10 @@ async def upload_invoice(file: UploadFile = File(...)):
             gemini_analysis=gemini_analysis,
             recommendations=recommendations,
         )
+=======
+        },
+        risk_summary=risk_summary,
+        gemini_analysis=gemini_analysis,
+        recommendations=recommendations,
+    )
+>>>>>>> Stashed changes

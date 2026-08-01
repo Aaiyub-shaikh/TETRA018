@@ -3,7 +3,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+<<<<<<< Updated upstream
 import { apiFetch, BASE_URL, InvoiceDetailResponse } from '@/lib/api';
+=======
+import { apiFetch, BASE_URL, InvoiceDetailResponse, InvoiceRecord } from '@/lib/api';
+>>>>>>> Stashed changes
 import {
   inv_invoiceNumber,
   inv_vendor,
@@ -147,9 +151,15 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
   const tax = inv_taxAmount(record);
   const total = inv_totalAmount(record);
   const taxable = total - tax;
+<<<<<<< Updated upstream
   const confidence = invoice.risk?.confidence;
   const riskScore = invoice.risk?.risk_score;
   const riskLevel = invoice.risk?.risk_level;
+=======
+  const confidence = invoice.risk.confidence;
+  const riskScore = invoice.risk.risk_score;
+  const riskLevel = invoice.risk.risk_level;
+>>>>>>> Stashed changes
   const exceptions: any[] = invoice.exceptions ?? record.exceptions ?? record.flags ?? [];
   const rawText: string = record.rawText ?? record.raw_text ?? '';
   const geminiAnalysis: string = invoice.gemini_analysis ?? record.gemini_analysis ?? record.aiExplanation ?? '';
@@ -235,7 +245,13 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 <p className="text-base font-semibold text-slate-900">AI audit completed.</p>
               )}
 
+<<<<<<< Updated upstream
               {renderFormattedNarrative(geminiAnalysis)}
+=======
+              {geminiAnalysis && (
+                <p className="mt-4 text-sm leading-7 text-slate-700 whitespace-pre-wrap">{geminiAnalysis}</p>
+              )}
+>>>>>>> Stashed changes
 
               {recommendations && (
                 <div className="mt-5 rounded-[20px] bg-white p-4 shadow-sm border border-slate-200">

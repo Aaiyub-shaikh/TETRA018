@@ -87,6 +87,7 @@ You are a senior forensic auditor writing a detailed compliance analysis for an 
 Invoice Risk Scan Results:
 {json.dumps(findings_payload, indent=2)}
 
+<<<<<<< Updated upstream
 Based on the above validation payload, write a comprehensive forensic audit analysis. Your response must be a single valid JSON object with exactly three keys:
 
 1. "riskSummary": A one-line headline summary (e.g., "High Risk: Duplicate Submission & Vendor Mismatch Detected"). Be specific about the primary concern.
@@ -109,6 +110,14 @@ Based on the above validation payload, write a comprehensive forensic audit anal
    - Preventive measures (e.g., "Enable duplicate invoice detection flag in ERP for this vendor").
 
 Do NOT include markdown code fences (```json) around the JSON. Return ONLY the raw JSON object.
+=======
+Please generate a JSON response with exactly three keys:
+1. "riskSummary": A concise risk summary headline.
+2. "geminiAnalysis": A detailed forensic AI explanation that may include paragraphs, bullet points, or numbered lists.
+3. "recommendations": Clear next-step recommendations for review or approval.
+
+Do NOT include markdown formatting outside the raw JSON object. Return strictly valid JSON with "riskSummary", "geminiAnalysis", and "recommendations".
+>>>>>>> Stashed changes
 """
 
     try:
@@ -181,6 +190,7 @@ def _generate_fallback_explanation(
     risk_score: int,
     risk_level: str
 ) -> Tuple[str, str, str]:
+<<<<<<< Updated upstream
     inv_num = invoice_number or "Invoice"
     issue_msgs = ", ".join(formatted_issues) if formatted_issues else ""
     amt_str = f"₹{total_amount:,.2f}" if isinstance(total_amount, (int, float)) and total_amount > 0 else "₹0.00"
@@ -191,11 +201,18 @@ def _generate_fallback_explanation(
             f"{inv_num} has passed all cross-validation checks with Vendor Master and Purchase Ledger. "
             f"No discrepancies were detected in pricing, dates, or vendor credentials. The invoice is verified and safe for payment approval."
         )
+=======
+    inv_num = invoice.get("invoiceNumber", "Invoice")
+    if not issues:
+        summary = "Invoice verified cleanly against master records."
+        narrative = f"{inv_num} has passed all cross-validation checks with Vendor Master and Purchase Ledger. No discrepancies were detected in pricing, dates, or vendor credentials. The invoice is verified and safe for payment approval."
+>>>>>>> Stashed changes
         recommendations = "No further action is required beyond standard processing."
         return summary, narrative, recommendations
 
     if any("duplicate" in issue.lower() for issue in formatted_issues):
         summary = "Potential duplicate invoice submission detected."
+<<<<<<< Updated upstream
         narrative = (
             f"{inv_num} appears more than once in the invoice repository, indicating a potential duplicate submission. "
             f"Processing duplicate invoices poses a direct risk of double payment and erroneous cash outflow. Manual verification is strongly recommended before payment approval."
@@ -222,6 +239,21 @@ def _generate_fallback_explanation(
             f"{inv_num} contains minor record variations ({issue_msgs}). "
             f"Standard routine review is advised before finalizing payment."
         )
+=======
+        narrative = f"{inv_num} appears more than once in the invoice repository, indicating a potential duplicate submission. Processing duplicate invoices poses a direct risk of double payment and erroneous cash outflow. Manual verification is strongly recommended before payment approval."
+        recommendations = "Suspend payment and validate the invoice against purchase orders and prior vendor invoices."
+    elif risk_score > 50:
+        summary = f"Critical audit anomalies flagged ({risk_level} Risk)."
+        narrative = f"{inv_num} exhibits multiple high-severity audit discrepancies: {issue_msgs}. These unverified items present financial and compliance exposure for the organization. Payment should be placed on hold pending complete vendor verification."
+        recommendations = "Place the invoice on hold and complete a full compliance review with the vendor and purchase ledger."
+    elif risk_score >= 21:
+        summary = f"Purchase ledger or vendor discrepancy noted ({risk_level} Risk)."
+        narrative = f"{inv_num} has been flagged for exceptions including {issue_msgs}. While the invoice may be valid, these discrepancies require cross-checking with purchase orders and vendor records prior to final disbursement."
+        recommendations = "Review the flagged discrepancies and verify supporting documents before approving payment."
+    else:
+        summary = "Minor invoice discrepancies noted."
+        narrative = f"{inv_num} contains minor record variations ({issue_msgs}). Standard routine review is advised before finalizing payment."
+>>>>>>> Stashed changes
         recommendations = "Confirm the minor discrepancies and proceed with normal approval once verified."
 
     return summary, narrative, recommendations
