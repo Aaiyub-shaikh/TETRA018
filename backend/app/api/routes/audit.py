@@ -6,23 +6,13 @@ from app.database.mongodb import get_database
 
 router = APIRouter()
 
-<<<<<<< Updated upstream
-@router.get("", summary="Get audit logs from MongoDB")
-=======
 
 @router.get("/audit", summary="Get audit logs from MongoDB")
->>>>>>> Stashed changes
 async def get_audit_trail(
     limit: int = 50,
     search: str = None,
     severity: str = None
 ):
-<<<<<<< Updated upstream
-    """
-    Returns recent audit execution records stored in the audit_results collection.
-    """
-=======
->>>>>>> Stashed changes
     db = get_database()
     if db is None:
         return {"events": [], "total": 0}

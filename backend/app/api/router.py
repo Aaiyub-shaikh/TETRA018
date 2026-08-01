@@ -1,9 +1,5 @@
 from fastapi import APIRouter
-<<<<<<< Updated upstream
 from app.api.routes import auth, health, upload, invoices, vendors, dashboard, reports, audit, ledger, email
-=======
-from app.api.routes import health, upload, invoices, vendors, dashboard, reports, audit, ledger, email
->>>>>>> Stashed changes
 
 api_router = APIRouter()
 
