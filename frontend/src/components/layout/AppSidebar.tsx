@@ -14,7 +14,8 @@ import {
   Settings, 
   User, 
   LogOut, 
-  Upload
+  Upload,
+  ScanLine,
 } from 'lucide-react';
 import Logo from '@/components/common/Logo';
 
@@ -27,6 +28,7 @@ export const AppSidebar: React.FC = () => {
     { name: 'Ledger', href: '/ledger', icon: BookOpen },
     { name: 'Vendors', href: '/vendors', icon: Users },
     { name: 'Risk Detection', href: '/risk', icon: ShieldAlert },
+    { name: 'Last Result', href: '/result', icon: ScanLine },
     { name: 'Audit Trail', href: '/audit', icon: History },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
