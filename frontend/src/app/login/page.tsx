@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as zod from 'zod';
 import { Lock, Mail, Eye, EyeOff, ShieldAlert, Sparkles } from 'lucide-react';
 import Logo from '../../components/common/Logo';
+import { BASE_URL } from '@/lib/api';
 
 const loginSchema = zod.object({
   email: zod.string().email({ message: 'Enter a valid corporate email address' }),
@@ -39,13 +40,37 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setErrorMsg(null);
     
-    // Simulate API call authentication
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!res.ok) {
+        let msg = 'Invalid compliance credentials. Please check and try again.';
+        try {
+          const errData = await res.json();
+          if (errData?.detail) {
+            msg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+
+      const authResult = await res.json();
+      localStorage.setItem('token', authResult.access_token);
+      localStorage.setItem('user', JSON.stringify(authResult.user));
+      
       // Route to dashboard
       router.push('/dashboard');
-    } catch {
-      setErrorMsg('Invalid compliance credentials. Please check and try again.');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid compliance credentials. Please check and try again.');
     } finally {
       setIsSubmitting(false);
     }

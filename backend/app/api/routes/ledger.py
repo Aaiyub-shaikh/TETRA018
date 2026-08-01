@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from app.database.mongodb import get_database
+from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
 
 router = APIRouter()
@@ -27,7 +28,7 @@ async def list_ledger():
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
 
 @router.post("/ledger", summary="Add a new ledger entry")
-async def add_ledger_entry(entry: LedgerEntry):
+async def add_ledger_entry(entry: LedgerEntry, current_user: dict = Depends(get_current_user_optional)):
     db = get_database()
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
