@@ -56,13 +56,11 @@ function AddVendorModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClo
     setError(null);
     try {
       await addVendor({
-        vendorName,
+        vendor: vendorName,
         gstin,
         email,
         phone,
         address,
-        status,
-        country: 'India',
       });
       onSuccess();
       onClose();
@@ -222,7 +220,7 @@ export default function VendorsPage() {
 
   const filteredVendors = useMemo(() => {
     return vendors.filter((vendor) => {
-      const name = vendor.vendorName || '';
+      const name = vendor.vendor || '';
       const gstin = vendor.gstin || '';
       
       const matchesSearch =
@@ -333,24 +331,18 @@ export default function VendorsPage() {
                   <th className="pb-3">Email</th>
                   <th className="pb-3">Phone</th>
                   <th className="pb-3">Address</th>
-                  <th className="pb-3 pr-2 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
                 {filteredVendors.map((vendor, index) => (
                   <tr key={index} className="group hover:bg-slate-50/50 transition-colors text-xs">
                     <td className="py-3.5 pl-2 font-bold text-slate-700">
-                      {vendor.vendorName}
+                      {vendor.vendor}
                     </td>
                     <td className="py-3.5 text-slate-500 font-semibold">{vendor.gstin}</td>
                     <td className="py-3.5 text-slate-500 font-medium">{vendor.email || '—'}</td>
                     <td className="py-3.5 text-slate-500 font-medium">{vendor.phone || '—'}</td>
                     <td className="py-3.5 text-slate-500 font-medium max-w-xs truncate">{vendor.address || '—'}</td>
-                    <td className="py-3.5 pr-2 text-right">
-                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full border ${getStatusStyle(vendor.status)}`}>
-                        {vendor.status === 'Under Investigation' ? 'Under Review' : vendor.status}
-                      </span>
-                    </td>
                   </tr>
                 ))}
               </tbody>

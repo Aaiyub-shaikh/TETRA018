@@ -37,45 +37,32 @@ export default function RiskPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    fetchInvoices()
-      .then((res) => {
-        setInvoices(res.invoices || []);
-        setError(null);
+    const delayDebounce = setTimeout(() => {
+      setLoading(true);
+      fetchInvoices({
+        search: searchTerm,
+        status: typeFilter !== 'ALL' ? typeFilter : undefined,
+        risk: severityFilter !== 'ALL' ? severityFilter.toUpperCase() : undefined
       })
-      .catch((err) => {
-        setError(err.message || 'Failed to load risk anomalies');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+        .then((res) => {
+          setInvoices(res.invoices || []);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err.message || 'Failed to load risk anomalies');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, typeFilter, severityFilter]);
 
   // Filter invoices to only show flagged items (status != Verified)
-  const riskInvoices = useMemo(() => {
+  const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => inv.status !== 'Verified');
   }, [invoices]);
-
-  const filteredInvoices = useMemo(() => {
-    return riskInvoices.filter((inv) => {
-      const invNo = inv.invoice_number || '';
-      const vendorName = inv.vendor || '';
-
-      const matchesSearch =
-        invNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vendorName.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = typeFilter === 'ALL' || inv.status === typeFilter;
-
-      let matchesSeverity = true;
-      const score = inv.risk_score || 0;
-      if (severityFilter === 'High') matchesSeverity = score >= 75;
-      else if (severityFilter === 'Medium') matchesSeverity = score >= 30 && score < 75;
-      else if (severityFilter === 'Low') matchesSeverity = score < 30;
-
-      return matchesSearch && matchesStatus && matchesSeverity;
-    });
-  }, [riskInvoices, searchTerm, severityFilter, typeFilter]);
 
   const riskTypes = ['ALL', 'Duplicate', 'GST Mismatch', 'Ledger Missing', 'High Risk', 'Pending Review'];
 

@@ -26,3 +26,10 @@ paddlepaddle==2.6.2
 pandas==2.3.1
 rapidfuzz==3.13.0
 regex==2025.7.34
+
+# MongoDB Atlas async integration drivers
+motor==3.7.1
+pymongo==4.17.0
+dnspython==2.8.0
+
+reportlab==5.0.0

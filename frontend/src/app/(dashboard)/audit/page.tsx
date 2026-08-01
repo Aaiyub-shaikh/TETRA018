@@ -4,6 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Timeline from '@/components/common/Timeline';
 import { fetchAuditTrail } from '@/lib/api';
 import { mockAuditTrail, AuditEvent } from '@/constants/mockData';
+import React, { useState, useEffect } from 'react';
+import Timeline from '@/components/common/Timeline';
+import { fetchAuditTrail } from '@/lib/api';
 import { History, Search, Filter, Download, FileCheck } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
@@ -83,9 +86,55 @@ export default function AuditPage() {
       return matchesSearch && matchesSeverity;
     });
   }, [events, searchTerm, severityFilter]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadAuditEvents = () => {
+    setLoading(true);
+    fetchAuditTrail(100, searchTerm, severityFilter)
+      .then((res) => {
+        setEvents(res.events || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message || 'Failed to load audit ledger');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      loadAuditEvents();
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, severityFilter]);
 
   const handleExport = () => {
-    alert('Cryptographic audit trail ledger downloaded successfully. SHA-256 Hash verified.');
+    try {
+      const headers = ['Timestamp', 'Action', 'User', 'Target Type', 'Target ID', 'Details', 'Severity'];
+      const rows = events.map(ev => [
+        ev.timestamp,
+        ev.action,
+        ev.user,
+        ev.targetType,
+        ev.targetId,
+        ev.details,
+        ev.severity
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compliance_audit_ledger_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('Failed to export audit ledger: ' + e.message);
+    }
   };
 
   if (loading) {
@@ -168,14 +217,18 @@ export default function AuditPage() {
           <span>Security Ledger Active: Log hashes are locked and backed up to SOC2 compliance storage.</span>
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {loading ? (
+          <Loader size="md" label="Retrieving audit records..." />
+        ) : error ? (
+          <EmptyState title="Error Loading Ledger" description={error} />
+        ) : events.length === 0 ? (
           <EmptyState
             title="No audit events found"
             description="Adjust your search filters or verify the compliance dashboard."
           />
         ) : (
           <div className="max-w-3xl pl-2 mt-4">
-            <Timeline events={filteredEvents} />
+            <Timeline events={events} />
           </div>
         )}
       </div>

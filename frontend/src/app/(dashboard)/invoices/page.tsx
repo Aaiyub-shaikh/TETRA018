@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ArrowUpDown, ArrowRight, Download, FileSpreadsheet, AlertTriangle, X } from 'lucide-react';
-import { fetchInvoices, type InvoiceRecord } from '@/lib/api';
+import { fetchInvoices, BASE_URL, type InvoiceRecord, inv_invoiceNumber, inv_vendor, inv_gstin, inv_date, inv_taxAmount, inv_totalAmount, inv_riskScore, inv_confidence, inv_uploadTime } from '@/lib/api';
 import RiskBadge from '@/components/common/RiskBadge';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
@@ -41,9 +41,13 @@ export default function InvoicesPage() {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'riskScore'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
-  const loadInvoices = () => {
+  const loadInvoices = (searchVal = searchTerm, statusVal = statusFilter, riskVal = riskFilter) => {
     setLoading(true);
-    fetchInvoices()
+    fetchInvoices({
+      search: searchVal,
+      status: statusVal,
+      risk: riskVal
+    })
       .then((res) => {
         setInvoices(res.invoices || []);
         setError(null);
@@ -56,51 +60,118 @@ export default function InvoicesPage() {
       });
   };
 
+  // Download PDF report for a specific invoice
+  const handlePdf = async (id: string) => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/invoices/${id}/report`);
+      if (!res.ok) throw new Error('Failed to generate PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${id}_report.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'PDF download error');
+    }
+  };
+
+  // Download CSV export for a specific invoice
+  const handleCsv = async (id: string) => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/invoices/${id}/csv`);
+      if (!res.ok) throw new Error('Failed to generate CSV');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${id}_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'CSV download error');
+    }
+  };
+
+  const handleAllPdf = async () => {
+    if (filteredInvoices.length === 0) { setError('No invoices to export'); return; }
+    try {
+      const lines: string[] = [
+        'TETRA Invoice Summary Report',
+        `Generated: ${new Date().toLocaleString('en-IN')}`,
+        `Total Invoices: ${filteredInvoices.length}`,
+        '',
+        ...filteredInvoices.map((inv, i) => {
+          const no = inv_invoiceNumber(inv);
+          const v = inv_vendor(inv);
+          const total = inv_totalAmount(inv);
+          const score = inv_riskScore(inv);
+          return `${i + 1}. ${no} | ${v} | ₹${total.toLocaleString('en-IN')} | Risk: ${score}%`;
+        }),
+      ];
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TETRA_Invoice_Summary_${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'Summary export error');
+    }
+  };
+
+  const handleAllCsv = async () => {
+    if (filteredInvoices.length === 0) { setError('No invoices to export'); return; }
+    try {
+      const headers = ['Invoice No', 'Vendor', 'GSTIN', 'Date', 'Tax Amount', 'Total Amount', 'Risk Score', 'Confidence'];
+      const rows = filteredInvoices.map(inv => [
+        inv_invoiceNumber(inv),
+        inv_vendor(inv),
+        inv_gstin(inv),
+        inv_date(inv) || inv_uploadTime(inv),
+        inv_taxAmount(inv),
+        inv_totalAmount(inv),
+        inv_riskScore(inv),
+        inv_confidence(inv) ?? '',
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TETRA_Invoices_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'CSV export error');
+    }
+  };
+
   useEffect(() => {
-    loadInvoices();
-  }, []);
+    const delayDebounce = setTimeout(() => {
+      loadInvoices(searchTerm, statusFilter, riskFilter);
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, statusFilter, riskFilter]);
 
-  // Filter and Sort logic
+  // Sort logic (filtering is done on backend)
   const filteredInvoices = useMemo(() => {
-    return invoices
-      .filter((inv) => {
-        const invNo = inv.invoice_number || '';
-        const vendor = inv.vendor || '';
-        const gstin = inv.vendor_gstin || '';
-
-        const matchesSearch =
-          invNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          gstin.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus = statusFilter === 'ALL' || inv.status === statusFilter;
-
-        let matchesRisk = true;
-        const score = inv.risk_score != null ? inv.risk_score : (inv.risk_level === 'High' ? 85 : inv.risk_level === 'Medium' ? 45 : 10);
-        if (riskFilter === 'HIGH') matchesRisk = score >= 75;
-        else if (riskFilter === 'MEDIUM') matchesRisk = score >= 30 && score < 75;
-        else if (riskFilter === 'LOW') matchesRisk = score < 30;
-
-        return matchesSearch && matchesStatus && matchesRisk;
-      })
-      .sort((a, b) => {
-        let comparison = 0;
-        if (sortBy === 'date') {
-          const dateA = a.invoice_date || a.upload_time || '';
-          const dateB = b.invoice_date || b.upload_time || '';
-          comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
-        } else if (sortBy === 'amount') {
-          const valA = a.total_amount != null ? a.total_amount : (a.total != null ? a.total : 0);
-          const valB = b.total_amount != null ? b.total_amount : (b.total != null ? b.total : 0);
-          comparison = valA - valB;
-        } else if (sortBy === 'riskScore') {
-          const scoreA = a.risk_score != null ? a.risk_score : (a.risk_level === 'High' ? 85 : a.risk_level === 'Medium' ? 45 : 10);
-          const scoreB = b.risk_score != null ? b.risk_score : (b.risk_level === 'High' ? 85 : b.risk_level === 'Medium' ? 45 : 10);
-          comparison = scoreA - scoreB;
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-  }, [invoices, searchTerm, statusFilter, riskFilter, sortBy, sortOrder]);
+    return [...invoices].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'date') {
+        const dateA = inv_date(a) || inv_uploadTime(a);
+        const dateB = inv_date(b) || inv_uploadTime(b);
+        comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
+      } else if (sortBy === 'amount') {
+        comparison = inv_totalAmount(a) - inv_totalAmount(b);
+      } else if (sortBy === 'riskScore') {
+        comparison = inv_riskScore(a) - inv_riskScore(b);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [invoices, sortBy, sortOrder]);
 
   const handleSort = (field: 'date' | 'amount' | 'riskScore') => {
     if (sortBy === field) {
@@ -127,11 +198,11 @@ export default function InvoicesPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all">
+          <button onClick={handleAllPdf} className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all">
             <Download className="h-4 w-4 text-[#3E0856]" />
             <span>PDF Summary</span>
           </button>
-          <button className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all">
+          <button onClick={handleAllCsv} className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all">
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             <span>Export CSV</span>
           </button>
@@ -217,6 +288,7 @@ export default function InvoicesPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </th>
+                  <th className="pb-3 text-right">Tax Amount</th>
                   <th className="pb-3 text-right cursor-pointer hover:text-slate-600" onClick={() => handleSort('amount')}>
                     <div className="flex items-center justify-end gap-1">
                       <span>Total Amount</span>
@@ -230,70 +302,92 @@ export default function InvoicesPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="pb-3 pr-2 text-right">Status</th>
+                  <th className="pb-3 pr-2 text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
-                {filteredInvoices.map((inv) => (
-                  <tr key={inv.invoice_number} className="group hover:bg-slate-50/50 transition-colors">
+                {filteredInvoices.map((inv) => {
+                  const invNum = inv_invoiceNumber(inv);
+                  const vendorName = inv_vendor(inv);
+                  const gstinVal = inv_gstin(inv);
+                  const dateVal = inv_date(inv);
+                  const taxVal = inv_taxAmount(inv);
+                  const totalVal = inv_totalAmount(inv);
+                  const score = inv_riskScore(inv);
+                  const conf = inv_confidence(inv);
+                  const uploadVal = inv_uploadTime(inv);
+                  return (
+                  <tr key={invNum} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="py-3.5 pl-2">
                       <Link
-                        href={`/invoices/${inv.invoice_number}`}
+                        href={`/invoices/${inv._id}`}
                         className="font-bold text-xs text-[#3E0856] hover:underline"
                       >
-                        {inv.invoice_number ?? '—'}
+                        {invNum}
                       </Link>
                     </td>
                     <td className="py-3.5">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-700">
-                          {inv.vendor}
+                          {vendorName}
                         </span>
                         <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight mt-0.5">
-                          {inv.vendor_gstin ?? '—'}
+                          {gstinVal}
                         </span>
                       </div>
                     </td>
                     <td className="py-3.5 text-xs font-semibold text-slate-500">
-                      {inv.invoice_date || (inv.upload_time ? new Date(inv.upload_time).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
+                      {dateVal || (uploadVal ? new Date(uploadVal).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
                     </td>
                     <td className="py-3.5 text-right text-xs font-bold text-slate-700">
-                      ₹{(inv.total_amount != null ? inv.total_amount : (inv.total != null ? inv.total : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3.5 text-right text-xs font-bold text-slate-700">
+                      ₹{totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3.5 text-center">
                       <span className="inline-flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                        {inv.confidence != null ? `${inv.confidence.toFixed(1)}%` : '—'}
+                        {conf != null ? `${conf.toFixed(1)}%` : '—'}
                       </span>
                     </td>
                     <td className="py-3.5 text-center">
-                      {(() => {
-                        const score = inv.risk_score != null ? inv.risk_score : (inv.risk_level === 'High' ? 85 : inv.risk_level === 'Medium' ? 45 : 10);
-                        return (
-                          <span className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
-                            score >= 75
-                              ? 'bg-rose-50 text-rose-700 border border-rose-100'
-                              : score >= 30
-                              ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          }`}>
-                            {score}%
-                          </span>
-                        );
-                      })()}
+                      <span className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
+                        score >= 75
+                          ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                          : score >= 30
+                          ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                      }`}>
+                        {score}%
+                      </span>
                     </td>
                     <td className="py-3.5 pr-2 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <RiskBadge status={inv.status as any} showIcon={false} />
                         <Link
-                          href={`/invoices/${inv.invoice_number}`}
+                          href={`/invoices/${inv._id}`}
                           className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#3E0856] rounded hover:bg-slate-100 transition-all duration-200"
                         >
                           <ArrowRight className="h-4 w-4" />
                         </Link>
+                        <button
+                          onClick={() => handlePdf(inv._id)}
+                          className="p-1 text-slate-400 hover:text-[#3E0856]"
+                          title="Download PDF"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleCsv(inv._id)}
+                          className="p-1 text-slate-400 hover:text-[#3E0856]"
+                          title="Download CSV"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

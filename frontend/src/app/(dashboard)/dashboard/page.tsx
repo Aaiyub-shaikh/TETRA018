@@ -6,9 +6,19 @@ import RiskChart from '@/components/charts/RiskChart';
 import VendorChart from '@/components/charts/VendorChart';
 import Timeline from '@/components/common/Timeline';
 import RiskBadge from '@/components/common/RiskBadge';
-import { FileText, ArrowRight, ShieldAlert, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { FileText, ArrowRight, ShieldAlert, Sparkles, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { fetchInvoices, fetchAuditTrail, type InvoiceRecord, type AuditEvent } from '@/lib/api';
+import {
+  fetchDashboardSummary,
+  fetchDashboardFlagged,
+  fetchDashboardActivity,
+  InvoiceRecord,
+  inv_invoiceNumber,
+  inv_vendor,
+  inv_gstin,
+  inv_totalAmount,
+  inv_riskScore,
+} from '@/lib/api';
 import Loader from '@/components/common/Loader';
 
 export default function DashboardPage() {
@@ -18,64 +28,60 @@ export default function DashboardPage() {
   const [flaggedCount, setFlaggedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        // Load recent invoices
-        const invRes = await fetchInvoices();
-        const allInvs = invRes.invoices || [];
-        setTotalCount(allInvs.length);
-        const flagged = allInvs.filter((inv) => inv.status !== 'Verified');
-        setFlaggedCount(flagged.length);
-        setFlaggedInvoices(flagged.slice(0, 4));
+  const loadDashboardData = async () => {
+    try {
+      // 1. Fetch summary counts
+      const summary = await fetchDashboardSummary();
+      setTotalCount(summary.processed || 0);
+      setFlaggedCount(summary.risks_detected || 0);
 
-        // Load audit logs and map them to Timeline format
-        const auditRes = await fetchAuditTrail(5);
-        const events = (auditRes.events || []).map((log: any, idx: number) => {
-          const invoiceNo = log.extracted_fields?.invoice_number || 'Unknown';
-          const riskLevel = log.risk?.risk_level || 'Low';
-          const score = log.risk?.risk_score || 0;
+      // 2. Fetch flagged invoices (highest risk first)
+      const flaggedRes = await fetchDashboardFlagged();
+      setFlaggedInvoices(flaggedRes || []);
 
-          let severity: 'Info' | 'Warning' | 'Critical' = 'Info';
-          if (riskLevel === 'High') severity = 'Critical';
-          else if (riskLevel === 'Medium') severity = 'Warning';
-
-          let action = 'Invoice Analyzed';
-          let details = `OCR extraction completed for ${log.filename}. Confidence: ${(log.risk?.confidence || 100).toFixed(1)}%. Risk score: ${score}%.`;
-          if (log.exceptions && log.exceptions.length > 0) {
-            action = 'Anomaly Flags Raised';
-            details = `Anomaly detected: ${log.exceptions.map((f: any) => f.check).join(', ')} on invoice ${invoiceNo}.`;
-          }
-
-          let formattedTime = '';
-          try {
+      // 3. Fetch recent audit logs compliance feed
+      const activityRes = await fetchDashboardActivity();
+      const events = (activityRes || []).map((log: any, idx: number) => {
+        let formattedTime = '';
+        try {
+          if (log.timestamp) {
             const d = new Date(log.timestamp);
             formattedTime = d.toISOString().replace('T', ' ').substring(0, 19);
-          } catch {
-            formattedTime = log.timestamp || '';
+          } else {
+            formattedTime = new Date().toISOString().replace('T', ' ').substring(0, 19);
           }
+        } catch {
+          formattedTime = log.timestamp || '';
+        }
 
-          return {
-            id: `ev-${idx}-${log.timestamp}`,
-            timestamp: formattedTime,
-            action,
-            user: 'AI Engine',
-            targetType: 'Invoice',
-            targetId: invoiceNo,
-            details,
-            severity,
-          };
-        });
-        setTimelineEvents(events);
-      } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+        return {
+          id: log.id || `ev-${idx}`,
+          timestamp: formattedTime,
+          action: log.action || 'Anomaly Flags Raised',
+          user: log.user || 'AI Engine',
+          targetType: 'Invoice',
+          targetId: log.targetId || 'N/A',
+          details: log.details || '',
+          severity: log.severity || 'Info',
+        };
+      });
+      setTimelineEvents(events);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    }
+  };
 
-    loadDashboardData();
+  useEffect(() => {
+    // Initial fetch
+    setLoading(true);
+    loadDashboardData().finally(() => setLoading(false));
+
+    // Polling interval for auto refresh (every 5 seconds)
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const flagRate = totalCount > 0 ? ((flaggedCount / totalCount) * 100).toFixed(1) : '0.0';
@@ -213,52 +219,55 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    flaggedInvoices.map((inv) => (
-                      <tr key={inv.invoice_number} className="group hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3.5 pl-2">
-                          <Link
-                            href={`/invoices/${inv.invoice_number}`}
-                            className="font-bold text-xs text-[#3E0856] hover:underline"
-                          >
-                            {inv.invoice_number}
-                          </Link>
-                        </td>
-                        <td className="py-3.5">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-slate-700">
-                              {inv.vendor}
-                            </span>
-                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight mt-0.5">
-                              {inv.vendor_gstin}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3.5 text-right text-xs font-bold text-slate-700">
-                          ₹{(inv.total_amount != null ? inv.total_amount : (inv.total != null ? inv.total : 0)).toLocaleString('en-IN', {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="py-3.5 text-center">
-                          {(() => {
-                            const score = inv.risk_score != null ? inv.risk_score : (inv.risk_level === 'High' ? 85 : inv.risk_level === 'Medium' ? 45 : 10);
-                            return (
-                              <span
-                                className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
-                                  score >= 75
-                                    ? 'bg-rose-50 text-rose-700 border border-rose-100'
-                                    : 'bg-amber-50 text-amber-700 border border-amber-100'
-                                }`}
-                              >
-                                {score}%
+                    flaggedInvoices.map((inv) => {
+                      const invNo = inv_invoiceNumber(inv);
+                      return (
+                        <tr key={invNo} className="group hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3.5 pl-2">
+                            <Link
+                              href={`/invoices/${inv._id || invNo}`}
+                              className="font-bold text-xs text-[#3E0856] hover:underline"
+                            >
+                              {invNo}
+                            </Link>
+                          </td>
+                          <td className="py-3.5">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-slate-700">
+                                {inv_vendor(inv)}
                               </span>
-                            );
-                          })()}
-                        </td>
-                        <td className="py-3.5 pr-2 text-right">
-                          <RiskBadge status={inv.status as any} showIcon={false} />
-                        </td>
-                      </tr>
-                    ))
+                              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight mt-0.5">
+                                {inv_gstin(inv)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 text-right text-xs font-bold text-slate-700">
+                            ₹{inv_totalAmount(inv).toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                            })}
+                          </td>
+                          <td className="py-3.5 text-center">
+                            {(() => {
+                              const score = inv_riskScore(inv);
+                              return (
+                                <span
+                                  className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
+                                    score >= 75
+                                      ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                      : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                  }`}
+                                >
+                                  {score}%
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3.5 pr-2 text-right">
+                            <RiskBadge status={inv.status as any} showIcon={false} />
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

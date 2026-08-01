@@ -1,19 +1,24 @@
+// src/app/(dashboard)/invoices/[id]/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import RiskBadge from '@/components/common/RiskBadge';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import {
-  ArrowLeft,
-  ShieldCheck,
-  AlertTriangle,
-  UserCheck,
-  XOctagon,
-  Printer,
-  Download,
-  Info,
-} from 'lucide-react';
+  InvoiceRecord,
+  inv_invoiceNumber,
+  inv_vendor,
+  inv_gstin,
+  inv_date,
+  inv_taxAmount,
+  inv_totalAmount,
+  inv_riskScore,
+  inv_confidence,
+  inv_riskLevel,
+} from '@/lib/api';
 import Loader from '@/components/common/Loader';
+import EmptyState from '@/components/common/EmptyState';
+import RiskBadge from '@/components/common/RiskBadge';
 
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 
@@ -81,112 +86,109 @@ export default function InvoiceDetailPage() {
   const id = params?.id as string;
 
   const [invoice, setInvoice] = useState<any>(null);
+export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+  const [invoice, setInvoice] = useState<InvoiceRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [currentStatus, setCurrentStatus] = useState<string>('');
-  const [currentRiskScore, setCurrentRiskScore] = useState<number>(0);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [dlError, setDlError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    fetch(`${BASE_URL}/api/invoices/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Invoice not found (${res.status})`);
-        return res.json();
-      })
-      .then((data) => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await apiFetch<InvoiceRecord>(`/api/invoices/${id}`);
         setInvoice(data);
-        setCurrentStatus(data.status || 'Pending Review');
-        setCurrentRiskScore(data.risk_score || 0);
         setError(null);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Failed to fetch invoice details');
-      })
-      .finally(() => {
+      } catch (e: any) {
+        setError(e.message || 'Failed to fetch invoice');
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    load();
   }, [id]);
 
-  const handleApprove = async () => {
-    setIsUpdating(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setCurrentStatus('Verified');
-    setCurrentRiskScore(2);
-    setIsUpdating(false);
+  const handlePdf = async () => {
+    try {
+      setDlError(null);
+      const res = await fetch(`${BASE_URL}/api/invoices/${id}/report`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.detail || `Server error ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice_${id}_report.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setDlError(e.message || 'PDF download failed');
+    }
   };
 
-  const handleDispute = async () => {
-    setIsUpdating(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setCurrentStatus('High Risk');
-    setCurrentRiskScore(95);
-    setIsUpdating(false);
+  const handleCsv = async () => {
+    try {
+      setDlError(null);
+      const res = await fetch(`${BASE_URL}/api/invoices/${id}/csv`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.detail || `Server error ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice_${id}_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setDlError(e.message || 'CSV download failed');
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-[400px] items-center justify-center">
-        <Loader size="lg" label="Loading invoice telemetry report..." />
-      </div>
-    );
-  }
+  if (loading) return <Loader size="md" label="Loading invoice..." />;
+  if (error) return <EmptyState title="Error" description={error} />;
+  if (!invoice) return <EmptyState title="Not found" description="Invoice data is unavailable." />;
 
-  if (error || !invoice) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[300px] gap-3 text-slate-500">
-        <AlertTriangle className="h-10 w-10 text-rose-500" />
-        <span className="text-sm font-bold">{error || 'Invoice not found'}</span>
-        <button
-          onClick={() => router.back()}
-          className="mt-2 text-xs font-bold text-[#3E0856] hover:underline"
-        >
-          Go Back
-        </button>
-      </div>
-    );
-  }
-
-  // Derived calculations
-  const taxableAmount = invoice.taxable_amount || 0.0;
-  const taxAmount = invoice.tax_amount || 0.0;
-  const totalAmount = invoice.total_amount || invoice.total || 0.0;
-  const exceptions = invoice.exceptions || [];
+  const invoiceNo = inv_invoiceNumber(invoice);
+  const vendor = inv_vendor(invoice);
+  const gstin = inv_gstin(invoice);
+  const date = inv_date(invoice);
+  const tax = inv_taxAmount(invoice);
+  const total = inv_totalAmount(invoice);
+  const taxable = total - tax;
+  const confidence = inv_confidence(invoice);
+  const riskScore = inv_riskScore(invoice);
+  const riskLevel = inv_riskLevel(invoice);
+  const exceptions: any[] = invoice.exceptions ?? invoice.flags ?? [];
+  const rawText: string = invoice.rawText ?? invoice.raw_text ?? '';
 
   return (
-    <div className="space-y-6">
-      {/* Back button and title */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+    <div className="p-6 space-y-6">
+      {/* Back + Download row */}
+      <div className="flex items-center justify-between gap-4">
+        <button
+          onClick={() => router.back()}
+          className="text-sm text-[#3E0856] hover:underline"
+        >
+          ← Back to Invoices
+        </button>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => router.back()}
-            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all active:scale-95 cursor-pointer"
+            onClick={handlePdf}
+            className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all"
           >
-            <ArrowLeft className="h-4.5 w-4.5" />
+            ⬇ PDF Report
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-                {invoice.invoice_number}
-              </h2>
-              <RiskBadge status={currentStatus as any} />
-            </div>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">
-              OCR Session File: {invoice.filename}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
-            <Printer className="h-4 w-4" />
-            <span>Print Report</span>
-          </button>
-          <button className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
-            <Download className="h-4 w-4" />
-            <span>Download PDF</span>
+          <button
+            onClick={handleCsv}
+            className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all"
+          >
+            ⬇ Export CSV
           </button>
         </div>
       </div>
@@ -381,97 +383,58 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* Right Column: Visual Invoice Document Preview (Col span 5) */}
-        <div className="lg:col-span-5">
-          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <span className="text-xs font-bold text-slate-700">Digital Document Scan</span>
-              <span className="text-[9px] font-semibold text-[#3E0856] bg-[#3E0856]/5 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                OCR Highlight Mode
-              </span>
-            </div>
+      <h2 className="text-2xl font-bold text-slate-800">Invoice Details</h2>
 
-            {/* Document body preview */}
-            <div className="relative border border-slate-200/60 rounded-xl bg-slate-50 p-6 min-h-[500px] flex flex-col justify-between overflow-hidden shadow-inner">
-              {/* Bounding box overlays */}
-              <div className="absolute top-12 left-6 px-1.5 py-0.5 rounded border border-[#3E0856]/40 bg-[#3E0856]/5 text-[9px] font-bold text-[#3E0856] cursor-help">
-                Vendor: {invoice.vendor}
-              </div>
-              <div className="absolute top-24 right-6 px-1.5 py-0.5 rounded border border-[#3E0856]/40 bg-[#3E0856]/5 text-[9px] font-bold text-[#3E0856] cursor-help">
-                No: {invoice.invoice_number}
-              </div>
-              <div className="absolute top-[280px] left-6 px-1.5 py-0.5 rounded border border-[#FAAE62]/50 bg-[#FAAE62]/5 text-[9px] font-bold text-[#3E0856] cursor-help">
-                GSTIN: {invoice.vendor_gstin}
-              </div>
-
-              {/* Invoice Layout */}
-              <div className="space-y-8 select-none">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="h-6 w-16 bg-slate-300 rounded"></div>
-                    <p className="text-[9px] text-slate-400 font-semibold uppercase">
-                      {invoice.vendor}
-                    </p>
-                    <p className="text-[8px] text-slate-400 leading-normal max-w-[120px]">
-                      {invoice.vendor_gstin ? `GSTIN: ${invoice.vendor_gstin}` : 'Corporate Vendor'}
-                    </p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <h3 className="text-sm font-bold text-slate-700 uppercase">Invoice</h3>
-                    <p className="text-[8px] text-slate-400 font-bold">
-                      DATE: {invoice.invoice_date || '—'}
-                    </p>
-                    <p className="text-[8px] text-slate-400 font-bold">
-                      INV NO: {invoice.invoice_number}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="h-[1px] bg-slate-200"></div>
-                  <div className="grid grid-cols-4 text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                    <div className="col-span-2">Description</div>
-                    <div className="text-center">Rate</div>
-                    <div className="text-right">Total</div>
-                  </div>
-                  <div className="h-[1px] bg-slate-100"></div>
-
-                  <div className="grid grid-cols-4 text-[9px] font-semibold text-slate-600">
-                    <div className="col-span-2">Compliance Scans &amp; Verification Services</div>
-                    <div className="text-center">1.00</div>
-                    <div className="text-right">
-                      ₹{taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-200 pt-4 flex flex-col gap-2">
-                <div className="flex justify-between text-[9px] font-semibold text-slate-500">
-                  <span>Subtotal:</span>
-                  <span className="font-bold text-slate-700">
-                    ₹{taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-[9px] font-semibold text-slate-500">
-                  <span>Tax Output GST:</span>
-                  <span className="font-bold text-slate-700">
-                    ₹{taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="h-[1px] bg-slate-200 my-1"></div>
-                <div className="flex justify-between text-xs font-bold text-[#3E0856]">
-                  <span>Total Due:</span>
-                  <span>
-                    ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-            </div>
+      {/* Core details grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        {[
+          { label: 'Invoice No', value: invoiceNo },
+          { label: 'Vendor', value: vendor },
+          { label: 'GSTIN', value: gstin },
+          { label: 'Invoice Date', value: date || '—' },
+          { label: 'Taxable Amount', value: `₹${taxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+          { label: 'Tax Amount', value: `₹${tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+          { label: 'Total Amount', value: `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+          { label: 'Confidence', value: confidence != null ? `${confidence.toFixed(1)}%` : '—' },
+          { label: 'Risk Score', value: `${riskScore}%` },
+        ].map(({ label, value }) => (
+          <div key={label}>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
+            <p className="text-base font-bold text-slate-800 mt-0.5">{value}</p>
           </div>
+        ))}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Risk Level</p>
+          <div className="mt-1"><RiskBadge level={riskLevel} /></div>
         </div>
       </div>
+
+      {/* Exceptions / Flags */}
+      {exceptions.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-amber-800 mb-3 uppercase tracking-wide">Exception Flags</h3>
+          <ul className="space-y-1.5">
+            {exceptions.map((ex: any, i: number) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-amber-900">
+                <span className="font-bold shrink-0">[{ex.severity ?? ex.check ?? '?'}]</span>
+                <span>{ex.detail ?? ex.check ?? JSON.stringify(ex)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Raw OCR Text */}
+      {rawText && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-600 mb-3 uppercase tracking-wide">Raw OCR Text</h3>
+          <pre className="bg-slate-50 p-3 rounded-xl overflow-auto text-xs whitespace-pre-wrap text-slate-700 max-h-64">
+            {rawText}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

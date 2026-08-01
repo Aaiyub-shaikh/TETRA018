@@ -57,13 +57,12 @@ function AddLedgerModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClo
     setError(null);
     try {
       await addLedger({
-        invoiceNumber,
-        vendorName,
+        invoiceNo: invoiceNumber,
+        vendor: vendorName,
         gstin,
         invoiceDate,
-        amount: parseFloat(amount),
+        invoiceSum: parseFloat(amount),
         taxAmount: taxAmount ? parseFloat(taxAmount) : 0,
-        status,
       });
       onSuccess();
       onClose();
@@ -374,31 +373,28 @@ export default function LedgerPage() {
                   <th className="pb-3">Invoice Date</th>
                   <th className="pb-3 text-right">Invoice Sum</th>
                   <th className="pb-3 text-right">Tax Amount</th>
-                  <th className="pb-3 pr-2 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
-                {ledgerMatches.map((item, index) => (
-                  <tr key={index} className="group hover:bg-slate-50/50 transition-colors text-xs">
-                    <td className="py-3.5 pl-2 font-bold text-[#3E0856]">
-                      {item.invoiceNumber}
-                    </td>
-                    <td className="py-3.5 font-bold text-slate-700">{item.vendorName}</td>
-                    <td className="py-3.5 text-slate-500 font-semibold">{item.gstin || '—'}</td>
-                    <td className="py-3.5 text-slate-500 font-semibold">{item.invoiceDate || '—'}</td>
-                    <td className="py-3.5 text-right font-bold text-slate-700">
-                      ₹{(item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3.5 text-right font-semibold text-slate-600">
-                      {item.taxAmount != null ? `₹${item.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
-                    </td>
-                    <td className="py-3.5 pr-2 text-right">
-                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadge(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {ledgerMatches.map((item, index) => {
+                  const invoiceNo = item.invoiceNo || '—';
+                  const vendor = item.vendor || '—';
+                  const gstin = item.gstin || '—';
+                  const date = item.invoiceDate ? new Date(item.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                  const amount = item.invoiceSum != null ? item.invoiceSum : 0;
+                  const tax = item.taxAmount != null ? item.taxAmount : null;
+
+                  return (
+                    <tr key={index} className="group hover:bg-slate-50/50 transition-colors text-xs">
+                      <td className="py-3.5 pl-2 font-bold text-[#3E0856]">{invoiceNo}</td>
+                      <td className="py-3.5 font-bold text-slate-700">{vendor}</td>
+                      <td className="py-3.5 text-slate-500 font-semibold">{gstin}</td>
+                      <td className="py-3.5 text-slate-500 font-semibold">{date}</td>
+                      <td className="py-3.5 text-right font-bold text-slate-700">₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td className="py-3.5 text-right font-semibold text-slate-600">{tax != null ? `₹${tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
