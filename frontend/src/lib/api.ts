@@ -333,6 +333,34 @@ export async function addLedger(payload: AddLedgerPayload): Promise<{ success: b
   });
 }
 
+export async function importVendors(file: File): Promise<{ success: boolean; rows_imported: number; duplicates_skipped: number; errors: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/vendors/import`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Import failed' }));
+    throw new Error(err.detail || 'Import failed');
+  }
+  return res.json();
+}
+
+export async function importLedger(file: File): Promise<{ success: boolean; rows_imported: number; duplicates_skipped: number; errors: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/ledger/import`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Import failed' }));
+    throw new Error(err.detail || 'Import failed');
+  }
+  return res.json();
+}
+
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {

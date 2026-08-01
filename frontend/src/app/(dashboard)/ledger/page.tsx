@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, AlertTriangle, CheckCircle2, ShieldCheck, Scale, RefreshCw, X, Plus } from 'lucide-react';
-import { fetchLedger, addLedger, type LedgerRecord } from '@/lib/api';
+import { BookOpen, AlertTriangle, CheckCircle2, ShieldCheck, Scale, RefreshCw, X, Plus, Upload } from 'lucide-react';
+import { fetchLedger, addLedger, importLedger, type LedgerRecord } from '@/lib/api';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
 
@@ -215,6 +215,8 @@ export default function LedgerPage() {
   const [isReconciling, setIsReconciling] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const loadLedger = () => {
     setLoading(true);
@@ -234,6 +236,25 @@ export default function LedgerPage() {
   useEffect(() => {
     loadLedger();
   }, []);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const result = await importLedger(file);
+      setToast({
+        message: `Purchase Ledger imported successfully. ${result.rows_imported} added, ${result.duplicates_skipped} duplicates skipped, ${result.errors} errors.`,
+        type: 'success',
+      });
+      loadLedger();
+    } catch (err: any) {
+      setToast({ message: err.message || 'Import failed', type: 'error' });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const triggerReconcile = async () => {
     setIsReconciling(true);
@@ -286,6 +307,21 @@ export default function LedgerPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls,.pdf"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2.5 text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4 text-[#3E0856]" />
+            <span>{importing ? 'Importing...' : 'Import Ledger'}</span>
+          </button>
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2.5 text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"

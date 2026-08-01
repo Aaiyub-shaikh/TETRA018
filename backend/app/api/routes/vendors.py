@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
 from app.database.mongodb import get_database
 from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
+from app.services.import_service import parse_file, map_vendor_columns
 
 router = APIRouter()
 
@@ -57,3 +58,65 @@ async def add_vendor(vendor: VendorCreate, current_user: dict = Depends(get_curr
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to insert vendor: {e}")
+
+
+@router.post("/vendors/import", summary="Import vendors from CSV, Excel, or PDF")
+async def import_vendors(file: UploadFile = File(...)):
+    db = get_database()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database not initialized")
+    try:
+        file_bytes = await file.read()
+        if len(file_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        df = parse_file(file_bytes, file.filename)
+        if df.empty:
+            raise HTTPException(status_code=400, detail="No table data found in file")
+
+        df = map_vendor_columns(df)
+
+        rows_imported = 0
+        duplicates_skipped = 0
+        errors = 0
+
+        for _, row in df.iterrows():
+            try:
+                vendor_name = str(row.get("vendor_name", "")).strip()
+                gstin = str(row.get("gstin", "")).strip()
+
+                if not vendor_name and not gstin:
+                    errors += 1
+                    continue
+
+                # Skip duplicates by GSTIN
+                if gstin:
+                    existing = await db["vendor_master"].find_one({"gstin": gstin})
+                    if existing:
+                        duplicates_skipped += 1
+                        continue
+
+                doc = {
+                    "vendor": vendor_name,
+                    "gstin": gstin,
+                    "email": str(row.get("email", "")).strip(),
+                    "phone": str(row.get("phone", "")).strip(),
+                    "address": str(row.get("address", "")).strip(),
+                    "status": str(row.get("status", "Active")).strip() or "Active",
+                    "created_at": datetime.utcnow().isoformat(),
+                }
+                await db["vendor_master"].insert_one(doc)
+                rows_imported += 1
+            except Exception:
+                errors += 1
+
+        return {
+            "success": True,
+            "rows_imported": rows_imported,
+            "duplicates_skipped": duplicates_skipped,
+            "errors": errors,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {e}")

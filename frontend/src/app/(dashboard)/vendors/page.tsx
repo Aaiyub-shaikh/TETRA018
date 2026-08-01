@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, AlertTriangle, X, Plus } from 'lucide-react';
-import { fetchVendors, addVendor, type VendorRecord } from '@/lib/api';
+import { Search, Filter, AlertTriangle, X, Plus, Upload } from 'lucide-react';
+import { fetchVendors, addVendor, importVendors, type VendorRecord } from '@/lib/api';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
 
@@ -195,6 +195,8 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -217,6 +219,25 @@ export default function VendorsPage() {
   useEffect(() => {
     loadVendors();
   }, []);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const result = await importVendors(file);
+      setToast({
+        message: `Vendor Master imported successfully. ${result.rows_imported} added, ${result.duplicates_skipped} duplicates skipped, ${result.errors} errors.`,
+        type: 'success',
+      });
+      loadVendors();
+    } catch (err: any) {
+      setToast({ message: err.message || 'Import failed', type: 'error' });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const filteredVendors = useMemo(() => {
     return vendors.filter((vendor) => {
@@ -262,13 +283,30 @@ export default function VendorsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#3E0856] text-white hover:bg-[#3E0856]/90 px-4 py-2.5 text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
-        >
-          <Plus className="h-4 w-4 text-[#FAAE62]" />
-          <span>Add Vendor</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls,.pdf"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2.5 text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4 text-[#3E0856]" />
+            <span>{importing ? 'Importing...' : 'Import Vendor'}</span>
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-[#3E0856] text-white hover:bg-[#3E0856]/90 px-4 py-2.5 text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <Plus className="h-4 w-4 text-[#FAAE62]" />
+            <span>Add Vendor</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
 from app.database.mongodb import get_database
 from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
+from app.services.import_service import parse_file, map_ledger_columns
 
 router = APIRouter()
 
@@ -104,3 +105,75 @@ async def add_ledger_entry(entry: LedgerEntry, current_user: dict = Depends(get_
         return {"success": True, "message": "Ledger entry added successfully", "entry": doc}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to insert ledger entry: {e}")
+
+
+@router.post("/ledger/import", summary="Import ledger entries from CSV, Excel, or PDF")
+async def import_ledger(file: UploadFile = File(...)):
+    db = get_database()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database not initialized")
+    try:
+        file_bytes = await file.read()
+        if len(file_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        df = parse_file(file_bytes, file.filename)
+        if df.empty:
+            raise HTTPException(status_code=400, detail="No table data found in file")
+
+        df = map_ledger_columns(df)
+
+        rows_imported = 0
+        duplicates_skipped = 0
+        errors = 0
+
+        for _, row in df.iterrows():
+            try:
+                invoice_no = str(row.get("invoice_no", "")).strip()
+                vendor = str(row.get("vendor", "")).strip()
+                gstin = str(row.get("gstin", "")).strip()
+
+                if not invoice_no:
+                    errors += 1
+                    continue
+
+                # Skip duplicates by invoice_no + gstin
+                existing = await db["purchase_ledger"].find_one({
+                    "invoiceNo": invoice_no,
+                    "gstin": gstin
+                })
+                if existing:
+                    duplicates_skipped += 1
+                    continue
+
+                def safe_float(val):
+                    try:
+                        v = str(val).replace(",", "").replace("₹", "").replace("Rs", "").replace(".", "", 1) if val else 0
+                        return float(v)
+                    except (ValueError, TypeError):
+                        return 0.0
+
+                doc = {
+                    "invoiceNo": invoice_no,
+                    "vendor": vendor,
+                    "gstin": gstin,
+                    "invoiceDate": str(row.get("invoice_date", "")).strip(),
+                    "invoiceSum": safe_float(row.get("total_amount")),
+                    "taxAmount": safe_float(row.get("tax_amount")),
+                    "created_at": datetime.utcnow().isoformat(),
+                }
+                await db["purchase_ledger"].insert_one(doc)
+                rows_imported += 1
+            except Exception:
+                errors += 1
+
+        return {
+            "success": True,
+            "rows_imported": rows_imported,
+            "duplicates_skipped": duplicates_skipped,
+            "errors": errors,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {e}")

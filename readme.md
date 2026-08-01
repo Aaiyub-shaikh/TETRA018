@@ -829,119 +829,47 @@ Never commit the real `.env` file.
 
 ---
 
+# 🔑 Demo Credentials
+
+Use the following credentials to explore the application without creating a new account.
+
+| Role | Email | Password |
+|------|-------|----------|
+| Compliance Officer | `compliance@tetra.com` | `password123` |
+
+> **Note:** These credentials are for demonstration purposes only and are intended for evaluating the application's features.
+
+---
+
+# 📁 Project Structure
+
+```text
 Tetra018
 │
 ├── backend/
-│   │
 │   ├── app/
-│   │   │
 │   │   ├── api/
 │   │   │   ├── routes/
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── upload.py
-│   │   │   │   ├── invoices.py
-│   │   │   │   ├── vendors.py
-│   │   │   │   ├── dashboard.py
-│   │   │   │   ├── reports.py
-│   │   │   │   ├── audit.py
-│   │   │   │   └── health.py
 │   │   │   └── router.py
 │   │   │
 │   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   ├── database.py
-│   │   │   ├── security.py
-│   │   │   ├── logging.py
-│   │   │   └── constants.py
-│   │   │
 │   │   ├── models/
-│   │   │   ├── invoice.py
-│   │   │   ├── vendor.py
-│   │   │   ├── ledger.py
-│   │   │   ├── report.py
-│   │   │   └── user.py
-│   │   │
 │   │   ├── schemas/
-│   │   │   ├── invoice.py
-│   │   │   ├── vendor.py
-│   │   │   ├── report.py
-│   │   │   ├── auth.py
-│   │   │   └── dashboard.py
+│   │   ├── repositories/
+│   │   ├── middleware/
+│   │   ├── dependencies/
+│   │   ├── utils/
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ocr/
-│   │   │   │   ├── paddle_ocr.py
-│   │   │   │   ├── image_preprocessing.py
-│   │   │   │   └── text_cleaner.py
-│   │   │   │
 │   │   │   ├── parser/
-│   │   │   │   ├── pdf_parser.py
-│   │   │   │   ├── image_parser.py
-│   │   │   │   └── invoice_parser.py
-│   │   │   │
 │   │   │   ├── extractor/
-│   │   │   │   ├── field_extractor.py
-│   │   │   │   ├── gst_extractor.py
-│   │   │   │   ├── vendor_extractor.py
-│   │   │   │   └── amount_extractor.py
-│   │   │   │
 │   │   │   ├── validation/
-│   │   │   │   ├── gst_validator.py
-│   │   │   │   ├── duplicate_checker.py
-│   │   │   │   ├── amount_checker.py
-│   │   │   │   ├── date_checker.py
-│   │   │   │   ├── vendor_checker.py
-│   │   │   │   └── ledger_checker.py
-│   │   │   │
 │   │   │   ├── risk/
-│   │   │   │   ├── risk_engine.py
-│   │   │   │   ├── scoring.py
-│   │   │   │   └── anomaly_detector.py
-│   │   │   │
 │   │   │   ├── ai/
-│   │   │   │   ├── llm_service.py
-│   │   │   │   ├── prompts.py
-│   │   │   │   ├── explanation_generator.py
-│   │   │   │   ├── report_summary.py
-│   │   │   │   └── followup_questions.py
-│   │   │   │
 │   │   │   ├── reports/
-│   │   │   │   ├── pdf_generator.py
-│   │   │   │   ├── csv_export.py
-│   │   │   │   └── excel_export.py
-│   │   │   │
 │   │   │   ├── email/
-│   │   │   │   ├── email_service.py
-│   │   │   │   ├── templates.py
-│   │   │   │   └── attachments.py
-│   │   │   │
 │   │   │   └── dashboard/
-│   │   │       ├── analytics.py
-│   │   │       ├── statistics.py
-│   │   │       └── charts.py
-│   │   │
-│   │   ├── repositories/
-│   │   │   ├── invoice_repository.py
-│   │   │   ├── vendor_repository.py
-│   │   │   ├── ledger_repository.py
-│   │   │   └── report_repository.py
-│   │   │
-│   │   ├── utils/
-│   │   │   ├── helpers.py
-│   │   │   ├── file_utils.py
-│   │   │   ├── regex_patterns.py
-│   │   │   ├── fuzzy_match.py
-│   │   │   ├── gst_utils.py
-│   │   │   └── logger.py
-│   │   │
-│   │   ├── middleware/
-│   │   │   ├── auth.py
-│   │   │   ├── cors.py
-│   │   │   └── error_handler.py
-│   │   │
-│   │   ├── dependencies/
-│   │   │   ├── auth.py
-│   │   │   └── database.py
 │   │   │
 │   │   ├── main.py
 │   │   └── __init__.py
@@ -957,55 +885,18 @@ Tetra018
 │   │   └── excel/
 │   │
 │   ├── dataset/
-│   │   ├── invoices/
-│   │   ├── purchase_ledger.csv
-│   │   ├── vendor_master.csv
-│   │   └── expected_exceptions.csv
-│   │
 │   ├── tests/
-│   │   ├── test_api.py
-│   │   ├── test_ocr.py
-│   │   ├── test_validation.py
-│   │   └── test_risk.py
-│   │
 │   ├── requirements.txt
-│   ├── .env
-│   ├── .env.example
-│   ├── alembic.ini
 │   ├── Dockerfile
 │   ├── docker-compose.yml
+│   ├── .env.example
 │   └── .gitignore
 │
 ├── frontend/
-│   │
 │   ├── public/
-│   │
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── (dashboard)/
-│   │   │   ├── login/
-│   │   │   ├── upload/
-│   │   │   ├── invoices/
-│   │   │   ├── vendors/
-│   │   │   ├── reports/
-│   │   │   ├── settings/
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx
-│   │   │   ├── globals.css
-│   │   │   └── favicon.ico
-│   │   │
 │   │   ├── components/
-│   │   │   ├── common/
-│   │   │   ├── dashboard/
-│   │   │   ├── charts/
-│   │   │   ├── invoice/
-│   │   │   ├── upload/
-│   │   │   ├── vendors/
-│   │   │   ├── tables/
-│   │   │   ├── layout/
-│   │   │   ├── forms/
-│   │   │   └── ui/
-│   │   │
 │   │   ├── hooks/
 │   │   ├── lib/
 │   │   ├── services/
@@ -1014,19 +905,18 @@ Tetra018
 │   │   ├── types/
 │   │   ├── constants/
 │   │   ├── assets/
-│   │   │   ├── images/
-│   │   │   ├── icons/
-│   │   │   └── logos/
 │   │   └── styles/
 │   │
 │   ├── package.json
-│   ├── tsconfig.json
 │   ├── next.config.ts
 │   ├── tailwind.config.ts
+│   ├── tsconfig.json
 │   └── components.json
 │
 ├── README.md
 └── LICENSE
+```
+
 # 📡 REST API Endpoints
 
 Authentication
