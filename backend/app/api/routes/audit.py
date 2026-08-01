@@ -6,7 +6,6 @@ from app.database.mongodb import get_database
 
 router = APIRouter()
 
-@router.get("/logs", summary="Get audit logs from MongoDB")
 @router.get("", summary="Get audit logs from MongoDB")
 async def get_audit_trail(
     limit: int = 50,

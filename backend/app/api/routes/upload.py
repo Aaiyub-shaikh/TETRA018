@@ -7,6 +7,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.core.config import settings
 from app.services.parser.invoice_parser import parse_invoice
 from app.services.risk.risk_engine import run_risk_engine
+from app.services.gemini_service import generate_ai_explanation
 from app.schemas.invoice import InvoiceAnalysisResponse
 from app.database.mongodb import get_database
 
@@ -92,6 +93,20 @@ async def upload_invoice(file: UploadFile = File(...)):
 
     processing_time = round(time.time() - start_time, 3)
 
+    invoice_context = {
+        "invoiceNumber": fields.get("invoice_number"),
+        "vendorName": fields.get("vendor_name"),
+        "gstin": fields.get("vendor_gstin"),
+        "invoiceDate": fields.get("date"),
+        "totalAmount": fields.get("total_amount", 0.0),
+    }
+    risk_summary, gemini_analysis, recommendations = generate_ai_explanation(
+        invoice=invoice_context,
+        issues=risk_result.get("flags", []),
+        risk_score=risk_result.get("risk_score", 0.0),
+        risk_level=risk_result.get("risk_level", "Low"),
+    )
+
     # 5. Connect to MongoDB Atlas and insert results
     db = get_database()
     if db is not None:
@@ -100,8 +115,14 @@ async def upload_invoice(file: UploadFile = File(...)):
             audit_doc = {
                 "filename": filename,
                 "raw_text": raw_text,
+                "created_at": datetime.utcnow().isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),
+                "processing_time": processing_time,
                 "extracted_fields": fields,
                 "exceptions": risk_result.get("flags", []),
+                "risk_score": risk_result.get("risk_score", 0.0),
+                "risk_level": risk_result.get("risk_level", "Low"),
+                "confidence": risk_result.get("confidence", 100.0),
                 "summary": risk_result.get("summary", ""),
                 "ai_explanation": risk_result.get("ai_explanation", ""),
                 "risk": {
@@ -111,11 +132,13 @@ async def upload_invoice(file: UploadFile = File(...)):
                     "summary": risk_result.get("summary", ""),
                     "ai_explanation": risk_result.get("ai_explanation", "")
                 },
-                "timestamp": datetime.utcnow().isoformat(),
-                "processing_time": processing_time,
-                "confidence": risk_result.get("confidence", 100.0)
+                "risk_summary": risk_summary,
+                "gemini_analysis": gemini_analysis,
+                "recommendations": recommendations,
+                "summary": risk_summary,
+                "aiExplanation": gemini_analysis,
             }
-            await db["audit_results"].insert_one(audit_doc)
+            audit_result = await db["audit_results"].insert_one(audit_doc)
             logger.info("Successfully saved result to audit_results collection.")
 
             # Map status based on risk level
@@ -141,8 +164,11 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "vendor": fields.get("vendor_name"),
                 "gstin": fields.get("vendor_gstin"),
                 "vendor_gstin": fields.get("vendor_gstin"),
+                "customer_gstin": fields.get("customer_gstin"),
                 "invoiceDate": fields.get("date"),
                 "invoice_date": fields.get("date"),
+                "due_date": fields.get("due_date"),
+                "dueDate": fields.get("due_date"),
                 "taxableValue": fields.get("taxable_amount", 0.0),
                 "taxable_amount": fields.get("taxable_amount", 0.0),
                 "taxAmount": fields.get("tax_amount", 0.0),
@@ -150,6 +176,7 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "totalAmount": fields.get("total_amount", 0.0),
                 "total": fields.get("total_amount", 0.0),
                 "total_amount": fields.get("total_amount", 0.0),
+                "place_of_supply": fields.get("place_of_supply"),
                 "riskLevel": risk_level,
                 "risk_level": risk_level,
                 "riskScore": risk_result.get("risk_score", 0.0),
@@ -162,8 +189,11 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "summary": risk_result.get("summary", ""),
                 "ai_explanation": risk_result.get("ai_explanation", ""),
                 "raw_text": raw_text,
+                "risk_summary": risk_summary,
+                "gemini_analysis": gemini_analysis,
+                "recommendations": recommendations,
             }
-            await db["invoices"].insert_one(invoice_doc)
+            invoice_result = await db["invoices"].insert_one(invoice_doc)
             logger.info("Successfully saved metadata to invoices collection.")
 
         except Exception as db_err:
@@ -171,6 +201,46 @@ async def upload_invoice(file: UploadFile = File(...)):
             # Do not crash the response if logging fails, but alert in logs
     else:
         logger.error("MongoDB Atlas connection not available. Skipping DB save.")
+
+    invoice_context = {
+        "invoiceNumber": fields.get("invoice_number"),
+        "vendorName": fields.get("vendor_name"),
+        "gstin": fields.get("vendor_gstin"),
+        "invoiceDate": fields.get("date"),
+        "totalAmount": fields.get("total_amount", 0.0),
+    }
+    risk_summary, gemini_analysis, recommendations = generate_ai_explanation(
+        invoice=invoice_context,
+        issues=risk_result.get("flags", []),
+        risk_score=risk_result.get("risk_score", 0.0),
+        risk_level=risk_result.get("risk_level", "Low"),
+    )
+
+    # Store Gemini output back into the audit result and invoice document if the DB insertion succeeded
+    if db is not None:
+        try:
+            if 'audit_result' in locals() and audit_result.inserted_id:
+                await db["audit_results"].update_one(
+                    {"_id": audit_result.inserted_id},
+                    {"$set": {
+                        "risk_summary": risk_summary,
+                        "gemini_analysis": gemini_analysis,
+                        "recommendations": recommendations,
+                        "summary": risk_summary,
+                        "aiExplanation": gemini_analysis
+                    }}
+                )
+            if 'invoice_result' in locals() and invoice_result.inserted_id:
+                await db["invoices"].update_one(
+                    {"_id": invoice_result.inserted_id},
+                    {"$set": {
+                        "risk_summary": risk_summary,
+                        "gemini_analysis": gemini_analysis,
+                        "recommendations": recommendations
+                    }}
+                )
+        except Exception as db_err:
+            logger.error(f"Failed to update Gemini fields in MongoDB Atlas: {db_err}")
 
     # Cleanup the file from local storage as it is fully processed and results are saved
     if os.path.exists(save_path):
@@ -193,8 +263,10 @@ async def upload_invoice(file: UploadFile = File(...)):
             "confidence": risk_result.get("confidence", 100.0),
             "flags": risk_result.get("flags", []),
             "flag_count": risk_result.get("flag_count", 0),
-            "summary": risk_result.get("summary", ""),
-            "ai_explanation": risk_result.get("ai_explanation", ""),
-        }
-    )
-
+                "summary": risk_result.get("summary", ""),
+                "ai_explanation": risk_result.get("ai_explanation", ""),
+            },
+            risk_summary=risk_summary,
+            gemini_analysis=gemini_analysis,
+            recommendations=recommendations,
+        )

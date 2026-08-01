@@ -56,7 +56,7 @@ def process_invoice_audit(invoice: Dict[str, Any]) -> Dict[str, Any]:
     risk_score, risk_level, confidence = evaluate_risk(invoice, all_issues)
 
     # 5. Generate Headline Summary & Forensic AI Explanation via Gemini
-    summary, ai_explanation = generate_ai_explanation(
+    risk_summary, gemini_analysis, recommendations = generate_ai_explanation(
         invoice=invoice,
         issues=all_issues,
         risk_score=risk_score,
@@ -77,8 +77,11 @@ def process_invoice_audit(invoice: Dict[str, Any]) -> Dict[str, Any]:
             "level": risk_level,
             "confidence": confidence
         },
-        "summary": summary,
-        "aiExplanation": ai_explanation,
+        "risk_summary": risk_summary,
+        "gemini_analysis": gemini_analysis,
+        "recommendations": recommendations,
+        "summary": risk_summary,
+        "aiExplanation": gemini_analysis,
         "checks": checks,
         "issues": all_issues,
 

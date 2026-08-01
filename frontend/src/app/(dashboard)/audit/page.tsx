@@ -3,10 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Timeline from '@/components/common/Timeline';
 import { fetchAuditTrail } from '@/lib/api';
-import { mockAuditTrail, AuditEvent } from '@/constants/mockData';
-import React, { useState, useEffect } from 'react';
-import Timeline from '@/components/common/Timeline';
-import { fetchAuditTrail } from '@/lib/api';
+import { AuditEvent } from '@/constants/mockData';
 import { History, Search, Filter, Download, FileCheck } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
@@ -16,85 +13,50 @@ export default function AuditPage() {
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadAuditLogs() {
-      try {
-        setLoading(true);
-        const res = await fetchAuditTrail(100);
-        if (res && res.events && res.events.length > 0) {
-          const mappedEvents: AuditEvent[] = res.events.map((log: any, idx: number) => {
-            const invoiceNo = log.extracted_fields?.invoice_number || log.filename || `INV-${idx + 100}`;
-            const riskLevel = log.risk?.risk_level || 'Low';
-            const score = log.risk?.risk_score || 0;
-
-            let severity: 'Info' | 'Warning' | 'Critical' = 'Info';
-            if (riskLevel === 'High') severity = 'Critical';
-            else if (riskLevel === 'Medium') severity = 'Warning';
-
-            let action = 'Invoice Analyzed & Audited';
-            let details = `OCR extraction completed. Confidence: ${(log.risk?.confidence || 100).toFixed(1)}%. Risk score: ${score}%.`;
-            if (log.exceptions && log.exceptions.length > 0) {
-              action = 'Anomaly Flags Raised';
-              details = `Anomaly detected: ${log.exceptions.map((f: any) => f.check).join(', ')}.`;
-            }
-
-            let formattedTime = log.timestamp;
-            try {
-              if (log.timestamp) {
-                const d = new Date(log.timestamp);
-                formattedTime = d.toISOString().replace('T', ' ').substring(0, 19);
-              }
-            } catch {
-              formattedTime = log.timestamp || '';
-            }
-
-            return {
-              id: `ev-real-${idx}-${log.timestamp || idx}`,
-              timestamp: formattedTime || 'Just now',
-              action,
-              user: 'AI Audit Engine',
-              targetType: 'Invoice',
-              targetId: invoiceNo,
-              details,
-              severity,
-            };
-          });
-          setEvents(mappedEvents);
-        } else {
-          setEvents(mockAuditTrail);
-        }
-      } catch (err) {
-        console.warn('Backend audit log fetch fallback to mock:', err);
-        setEvents(mockAuditTrail);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadAuditLogs();
-  }, []);
-
-  const filteredEvents = useMemo(() => {
-    return events.filter((event: AuditEvent) => {
-      const matchesSearch =
-        event.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.user.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesSeverity = severityFilter === 'ALL' || event.severity === severityFilter;
-
-      return matchesSearch && matchesSeverity;
-    });
-  }, [events, searchTerm, severityFilter]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadAuditEvents = () => {
     setLoading(true);
     fetchAuditTrail(100, searchTerm, severityFilter)
       .then((res) => {
-        setEvents(res.events || []);
+        const mappedEvents: AuditEvent[] = (res.events || []).map((log: any, idx: number) => {
+          const invoiceNo = log.targetId || log.extracted_fields?.invoice_number || log.filename || `INV-${idx + 100}`;
+          const riskLevel = log.risk?.risk_level || 'Low';
+          const score = log.risk?.risk_score || 0;
+
+          let severity: 'Info' | 'Warning' | 'Critical' = 'Info';
+          if (riskLevel === 'High') severity = 'Critical';
+          else if (riskLevel === 'Medium') severity = 'Warning';
+
+          let action = log.action || 'Invoice Analyzed & Audited';
+          let details = log.details || `OCR extraction completed. Confidence: ${(log.risk?.confidence || 100).toFixed(1)}%. Risk score: ${score}%.`;
+          if (!log.action && log.exceptions && log.exceptions.length > 0) {
+            action = 'Anomaly Flags Raised';
+            details = `Anomaly detected: ${log.exceptions.map((f: any) => f.check).join(', ')}.`;
+          }
+
+          let formattedTime = log.timestamp;
+          try {
+            if (log.timestamp) {
+              const d = new Date(log.timestamp);
+              formattedTime = d.toISOString().replace('T', ' ').substring(0, 19);
+            }
+          } catch {
+            formattedTime = log.timestamp || '';
+          }
+
+          return {
+            id: log.id || `ev-real-${idx}-${log.timestamp || idx}`,
+            timestamp: formattedTime || 'Just now',
+            action,
+            user: log.user || 'AI Audit Engine',
+            targetType: (log.targetType as AuditEvent['targetType']) || 'Invoice',
+            targetId: invoiceNo,
+            details,
+            severity,
+          };
+        });
+        setEvents(mappedEvents);
         setError(null);
       })
       .catch((err) => {
@@ -112,10 +74,23 @@ export default function AuditPage() {
     return () => clearTimeout(delayDebounce);
   }, [searchTerm, severityFilter]);
 
+  const filteredEvents = useMemo(() => {
+    return events.filter((event: AuditEvent) => {
+      const matchesSearch =
+        event.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.user.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesSeverity = severityFilter === 'ALL' || event.severity === severityFilter;
+
+      return matchesSearch && matchesSeverity;
+    });
+  }, [events, searchTerm, severityFilter]);
+
   const handleExport = () => {
     try {
       const headers = ['Timestamp', 'Action', 'User', 'Target Type', 'Target ID', 'Details', 'Severity'];
-      const rows = events.map(ev => [
+      const rows = filteredEvents.map(ev => [
         ev.timestamp,
         ev.action,
         ev.user,
@@ -217,18 +192,16 @@ export default function AuditPage() {
           <span>Security Ledger Active: Log hashes are locked and backed up to SOC2 compliance storage.</span>
         </div>
 
-        {loading ? (
-          <Loader size="md" label="Retrieving audit records..." />
-        ) : error ? (
+        {error ? (
           <EmptyState title="Error Loading Ledger" description={error} />
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <EmptyState
             title="No audit events found"
             description="Adjust your search filters or verify the compliance dashboard."
           />
         ) : (
           <div className="max-w-3xl pl-2 mt-4">
-            <Timeline events={events} />
+            <Timeline events={filteredEvents} />
           </div>
         )}
       </div>

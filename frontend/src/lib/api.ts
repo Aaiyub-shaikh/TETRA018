@@ -25,6 +25,8 @@ export interface InvoiceRisk {
   confidence: number;
   flags: InvoiceFlag[];
   flag_count: number;
+  summary?: string;
+  ai_explanation?: string;
 }
 
 export interface UploadResponse {
@@ -36,6 +38,24 @@ export interface UploadResponse {
   raw_text_preview: string;
   fields: InvoiceFields;
   risk: InvoiceRisk;
+  risk_summary?: string;
+  gemini_analysis?: string;
+  recommendations?: string;
+  ai_summary?: string;
+  ai_explanation?: string;
+}
+
+export interface InvoiceDetailResponse {
+  invoice: InvoiceRecord;
+  risk: {
+    risk_score: number;
+    risk_level: 'Low' | 'Medium' | 'High';
+    confidence: number;
+  };
+  exceptions: InvoiceFlag[];
+  gemini_analysis?: string;
+  recommendations?: string;
+  risk_summary?: string;
 }
 
 // Invoice record as stored in MongoDB invoices collection
@@ -268,6 +288,13 @@ export async function fetchInvoices(filters?: { search?: string; status?: string
 
 export async function fetchVendors(): Promise<{ vendors: VendorRecord[]; total: number }> {
   return apiFetch('/api/vendors');
+}
+
+export async function sendInvoiceReport(invoiceId: string, email: string): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/api/email/send-report', {
+    method: 'POST',
+    body: JSON.stringify({ invoice_id: invoiceId, email }),
+  });
 }
 
 export async function addVendor(payload: AddVendorPayload): Promise<{ success: boolean; vendor: VendorRecord }> {

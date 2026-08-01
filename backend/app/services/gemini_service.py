@@ -33,10 +33,10 @@ def generate_ai_explanation(
     issues: List[Dict[str, Any]],
     risk_score: int,
     risk_level: str
-) -> Tuple[str, str]:
+) -> Tuple[str, str, str]:
     """
-    Generates an audit-focused AI explanation and headline summary using Google Gemini API.
-    Returns tuple: (headline_summary, full_audit_narrative)
+    Generates an audit-focused AI explanation using Google Gemini API.
+    Returns tuple: (risk_summary, gemini_analysis, recommendations)
     """
     api_key = getattr(settings, "GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
     
@@ -82,22 +82,33 @@ def generate_ai_explanation(
     }
 
     prompt = f"""
-You are an experienced financial auditor writing a formal compliance audit explanation for an Invoice Risk Scanner dashboard.
+You are a senior forensic auditor writing a detailed compliance analysis for an Invoice Risk Scanner dashboard. Your analysis must be thorough, evidence-based, and actionable.
 
-Rule Engine Validation Payload:
+Invoice Risk Scan Results:
 {json.dumps(findings_payload, indent=2)}
 
-Instructions:
-1. Explain each issue separately under clear headings.
-2. Explain why it is important (e.g. risk of double payment, input tax credit denial, payment redirect).
-3. Avoid making unsupported accusations such as fraud.
-4. Recommend practical next steps for the accounts payable team.
-5. Use professional, clear audit language.
-6. Return strictly a JSON object with two keys:
-   - "summary": A concise 1-sentence headline summary (e.g., "High Risk: Duplicate Invoice & GSTIN Discrepancy Flagged").
-   - "aiExplanation": A structured auditor explanation with Risk Assessment, Findings Breakdown, and Recommendation.
+Based on the above validation payload, write a comprehensive forensic audit analysis. Your response must be a single valid JSON object with exactly three keys:
 
-Do NOT include markdown wrapping outside the raw JSON object.
+1. "riskSummary": A one-line headline summary (e.g., "High Risk: Duplicate Submission & Vendor Mismatch Detected"). Be specific about the primary concern.
+
+2. "geminiAnalysis": A detailed forensic audit narrative structured as follows:
+   - Open with a **Risk Assessment** paragraph stating the overall risk level and confidence of the finding.
+   - Under **Findings Breakdown**, analyze EACH validation flag separately:
+     - Explain what the rule engine detected.
+     - Explain the financial or compliance implication (e.g., "GSTIN mismatch may indicate invoice is issued by a non-registered entity, risking ITC denial" or "Duplicate invoice poses direct risk of ₹{total_amount} double payment").
+     - Assess severity: is this a routine discrepancy or a critical red flag?
+   - Under **Vendor & Ledger Reconciliation**, cross-reference:
+     - Whether vendor credentials (GSTIN, name) match the approved Vendor Master File.
+     - Whether invoice amounts and dates align with purchase ledger entries.
+     - Any patterns suggesting unauthorized or fictitious billing.
+   - Close with a **Conclusion** paragraph summarizing the overall audit opinion.
+
+3. "recommendations": A prioritized list of next-step actions for the accounts payable team, ordered by urgency:
+   - Immediate actions (e.g., "Suspend payment until duplicate is verified").
+   - Secondary verification steps (e.g., "Cross-check vendor GSTIN against GST portal records").
+   - Preventive measures (e.g., "Enable duplicate invoice detection flag in ERP for this vendor").
+
+Do NOT include markdown code fences (```json) around the JSON. Return ONLY the raw JSON object.
 """
 
     try:
@@ -114,7 +125,7 @@ Do NOT include markdown wrapping outside the raw JSON object.
                     if response and response.text:
                         parsed = _parse_json_response(response.text)
                         if parsed:
-                            return parsed["summary"], parsed["aiExplanation"]
+                            return parsed["riskSummary"], parsed["geminiAnalysis"], parsed["recommendations"]
                 except Exception:
                     continue
         except Exception:
@@ -131,7 +142,7 @@ Do NOT include markdown wrapping outside the raw JSON object.
                     if response and response.text:
                         parsed = _parse_json_response(response.text)
                         if parsed:
-                            return parsed["summary"], parsed["aiExplanation"]
+                            return parsed["riskSummary"], parsed["geminiAnalysis"], parsed["recommendations"]
                 except Exception:
                     continue
         except Exception:
@@ -154,7 +165,7 @@ def _parse_json_response(text: str) -> Optional[Dict[str, str]]:
         if clean_text.endswith("```"):
             clean_text = clean_text[:-3]
         data = json.loads(clean_text.strip())
-        if "summary" in data and "aiExplanation" in data:
+        if "riskSummary" in data and "geminiAnalysis" in data and "recommendations" in data:
             return data
     except Exception:
         pass
@@ -169,67 +180,48 @@ def _generate_fallback_explanation(
     formatted_issues: List[str],
     risk_score: int,
     risk_level: str
-) -> Tuple[str, str]:
-    """Generates structured, professional auditor explanations when LLM API is offline."""
+) -> Tuple[str, str, str]:
+    inv_num = invoice_number or "Invoice"
+    issue_msgs = ", ".join(formatted_issues) if formatted_issues else ""
     amt_str = f"₹{total_amount:,.2f}" if isinstance(total_amount, (int, float)) and total_amount > 0 else "₹0.00"
 
-    if not formatted_issues or len(formatted_issues) == 0:
-        summary = "Clean Audit: Verified against master records."
+    if not formatted_issues:
+        summary = "Invoice verified cleanly against master records."
         narrative = (
-            f"**Risk Assessment: Low (0/100)**\n\n"
-            f"Invoice **{invoice_number}** ({vendor_name}) passed all rule engine validation checks cleanly against master vendor databases and purchase ledger records.\n\n"
-            f"**Reasoning:**\n"
-            f"* **GSTIN Format**: Valid format ({vendor_gstin}).\n"
-            f"* **Vendor Verification**: Matched approved Vendor Master File.\n"
-            f"* **Ledger Match**: Invoice total ({amt_str}) matches purchase ledger entry.\n"
-            f"* **Duplicate Check**: No matching invoice records detected in billing repository.\n\n"
-            f"**Recommendation:**\n"
-            f"Approved for standard payment processing."
+            f"{inv_num} has passed all cross-validation checks with Vendor Master and Purchase Ledger. "
+            f"No discrepancies were detected in pricing, dates, or vendor credentials. The invoice is verified and safe for payment approval."
         )
-        return summary, narrative
+        recommendations = "No further action is required beyond standard processing."
+        return summary, narrative, recommendations
 
-    # Categorize findings cleanly without duplicate headers
-    findings = []
-    for idx, issue_text in enumerate(formatted_issues, 1):
-        findings.append(f"{idx}. {issue_text}")
-
-    findings_block = "\n".join(findings)
-
-    if risk_score >= 75 or risk_level == "High":
-        summary = f"High Risk ({risk_score}/100): Critical audit discrepancies detected"
+    if any("duplicate" in issue.lower() for issue in formatted_issues):
+        summary = "Potential duplicate invoice submission detected."
         narrative = (
-            f"**Risk Assessment: High ({risk_score}/100)**\n\n"
-            f"Invoice **{invoice_number}** for **{vendor_name}** ({amt_str}) exhibits {len(formatted_issues)} validation exception(s) requiring auditor attention before payment authorization.\n\n"
-            f"**Rule Engine Findings:**\n"
-            f"{findings_block}\n\n"
-            f"**Audit Impact & Reasoning:**\n"
-            f"Anomalies between invoice parameters and ledger records present financial exposure, such as potential duplicate payments, unverified vendor liabilities, or tax compliance issues.\n\n"
-            f"**Recommended Actions:**\n"
-            f"* Place payment on hold in Accounts Payable.\n"
-            f"* Verify vendor GSTIN ({vendor_gstin}) and registration details.\n"
-            f"* Confirm purchase order matching before disbursement."
+            f"{inv_num} appears more than once in the invoice repository, indicating a potential duplicate submission. "
+            f"Processing duplicate invoices poses a direct risk of double payment and erroneous cash outflow. Manual verification is strongly recommended before payment approval."
         )
-    elif risk_score >= 25 or risk_level == "Medium":
-        summary = f"Medium Risk ({risk_score}/100): Parameter or ledger mismatch"
+        recommendations = "Suspend payment and validate the invoice against purchase orders and prior vendor invoices."
+    elif risk_score > 50 or risk_level == "High":
+        summary = f"Critical audit anomalies flagged ({risk_level} Risk)."
         narrative = (
-            f"**Risk Assessment: Medium ({risk_score}/100)**\n\n"
-            f"Invoice **{invoice_number}** for **{vendor_name}** ({amt_str}) was flagged with {len(formatted_issues)} exception(s) during automated verification.\n\n"
-            f"**Rule Engine Findings:**\n"
-            f"{findings_block}\n\n"
-            f"**Audit Impact & Reasoning:**\n"
-            f"Discrepancies between invoice fields and ledger records may result from administrative posting delays, missing PO entries, or rate variations.\n\n"
-            f"**Recommended Actions:**\n"
-            f"* Review supporting goods received notes (GRN) and purchase orders.\n"
-            f"* Perform manual verification before disbursement."
+            f"{inv_num} exhibits multiple high-severity audit discrepancies: {issue_msgs}. "
+            f"These unverified items present financial and compliance exposure for the organization. "
+            f"Payment should be placed on hold pending complete vendor verification."
         )
+        recommendations = "Place the invoice on hold and complete a full compliance review with the vendor and purchase ledger."
+    elif risk_score >= 21 or risk_level == "Medium":
+        summary = f"Purchase ledger or vendor discrepancy noted ({risk_level} Risk)."
+        narrative = (
+            f"{inv_num} has been flagged for exceptions including {issue_msgs}. "
+            f"While the invoice may be valid, these discrepancies require cross-checking with purchase orders and vendor records prior to final disbursement."
+        )
+        recommendations = "Review the flagged discrepancies and verify supporting documents before approving payment."
     else:
-        summary = f"Low Risk ({risk_score}/100): Minor record variations"
+        summary = "Minor invoice discrepancies noted."
         narrative = (
-            f"**Risk Assessment: Low ({risk_score}/100)**\n\n"
-            f"Invoice **{invoice_number}** ({vendor_name}) contains minor record variations:\n\n"
-            f"{findings_block}\n\n"
-            f"**Recommended Actions:**\n"
-            f"Proceed with standard routine review."
+            f"{inv_num} contains minor record variations ({issue_msgs}). "
+            f"Standard routine review is advised before finalizing payment."
         )
+        recommendations = "Confirm the minor discrepancies and proceed with normal approval once verified."
 
-    return summary, narrative
+    return summary, narrative, recommendations
