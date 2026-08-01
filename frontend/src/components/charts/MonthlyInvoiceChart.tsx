@@ -11,17 +11,28 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-import { mockMonthlyInvoices } from '@/constants/mockData';
+import { fetchDashboardMonthlyTrend } from '@/lib/api';
 import Loader from '@/components/common/Loader';
 
 export const MonthlyInvoiceChart: React.FC = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    fetchDashboardMonthlyTrend()
+      .then((res) => {
+        setData(res || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch monthly trend for bar chart:', err);
+        setLoading(false);
+      });
   }, []);
 
-  if (!isMounted) {
+  if (!isMounted || loading) {
     return (
       <div className="flex h-[300px] w-full items-center justify-center rounded-2xl border border-slate-100 bg-white p-6">
         <Loader size="sm" label="Mounting bar charts..." />
@@ -29,11 +40,15 @@ export const MonthlyInvoiceChart: React.FC = () => {
     );
   }
 
+  // Filter months that have data
+  const filteredData = data.filter(d => d.processed > 0 || d.flagged > 0);
+  const finalData = filteredData.length > 0 ? filteredData : data;
+
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={mockMonthlyInvoices}
+          data={finalData}
           margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           barGap={6}
         >
@@ -87,3 +102,4 @@ export const MonthlyInvoiceChart: React.FC = () => {
 };
 
 export default MonthlyInvoiceChart;
+
