@@ -44,3 +44,26 @@ def close_mongodb():
         db_helper.client = None
         db_helper.db = None
         logger.info("MongoDB Atlas connection successfully closed.")
+
+async def seed_users():
+    """Seed the default compliance officer admin user if the users collection is empty."""
+    db = get_database()
+    if db is None:
+        return
+    try:
+        existing = await db["users"].find_one({"email": "compliance@tetra.com"})
+        if not existing:
+            from app.core.security import get_password_hash
+            from datetime import datetime
+            
+            default_user = {
+                "email": "compliance@tetra.com",
+                "password": get_password_hash("password123"),
+                "full_name": "Compliance Officer",
+                "role": "admin",
+                "created_at": datetime.utcnow().isoformat()
+            }
+            await db["users"].insert_one(default_user)
+            logger.info("Successfully seeded default compliance admin user.")
+    except Exception as e:
+        logger.error(f"Failed to seed default compliance user: {e}")

@@ -407,7 +407,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
         ))}
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Risk Level</p>
-          <div className="mt-1"><RiskBadge level={riskLevel} /></div>
+          <div className="mt-1"><RiskBadge status={riskLevel as any} /></div>
         </div>
       </div>
 

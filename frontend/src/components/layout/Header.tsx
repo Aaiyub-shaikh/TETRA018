@@ -8,6 +8,23 @@ export const Header: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = React.useState('');
+  const [user, setUser] = React.useState<{ full_name: string; role: string } | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch { /* ignore */ }
+      }
+    }
+  }, []);
+
+  const displayName = user?.full_name || 'Compliance Officer';
+  const displayRole = user?.role
+    ? user.role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : 'Admin';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,13 +93,13 @@ export const Header: React.FC = () => {
         {/* User Profile Info */}
         <div className="flex items-center gap-3 select-none">
           <div className="flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-700">Aaiyub J.</span>
-            <span className="text-[10px] text-slate-400 font-medium">Compliance Officer</span>
+            <span className="text-xs font-semibold text-slate-700">{displayName}</span>
+            <span className="text-[10px] text-slate-400 font-medium">{displayRole}</span>
           </div>
           
           {/* Avatar representation */}
           <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3E0856] to-[#601980] text-xs font-bold text-white shadow-sm">
-            AJ
+            {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></div>
           </div>
         </div>

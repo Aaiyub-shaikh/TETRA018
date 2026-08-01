@@ -152,8 +152,15 @@ export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:80
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { ...headers, ...options?.headers },
     ...options,
   });
   if (!res.ok) {
@@ -231,6 +238,10 @@ export async function uploadInvoice(
     xhr.addEventListener('error', () => reject(new Error('Network error — backend unreachable.')));
     xhr.addEventListener('abort', () => reject(new Error('Upload aborted.')));
     xhr.open('POST', `${BASE_URL}/api/upload`);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
     xhr.send(formData);
   });
 }

@@ -370,14 +370,14 @@ export default function InvoicesPage() {
                           <ArrowRight className="h-4 w-4" />
                         </Link>
                         <button
-                          onClick={() => handlePdf(inv._id)}
+                          onClick={() => handlePdf(inv._id || '')}
                           className="p-1 text-slate-400 hover:text-[#3E0856]"
                           title="Download PDF"
                         >
                           <Download className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleCsv(inv._id)}
+                          onClick={() => handleCsv(inv._id || '')}
                           className="p-1 text-slate-400 hover:text-[#3E0856]"
                           title="Download CSV"
                         >
