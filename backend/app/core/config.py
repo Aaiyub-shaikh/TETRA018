@@ -14,6 +14,9 @@ try:
         # PaddleOCR GPU/CPU
         USE_GPU: bool = False
         
+        # Gemini API
+        GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+        
         # MongoDB Atlas settings
         MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb+srv://parthgajjar1308_db_user:0vsYacOqmGzryqhe@cluster0.vdh9xmy.mongodb.net")
         DATABASE_NAME: str = os.getenv("DATABASE_NAME", "invoice_risk_scanner")
@@ -44,6 +47,7 @@ except Exception:
         TEMP_DIR: str = "uploads/temp"
         PROCESSED_DIR: str = "uploads/processed"
         USE_GPU: bool = False
+        GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
         MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb+srv://parthgajjar1308_db_user:0vsYacOqmGzryqhe@cluster0.vdh9xmy.mongodb.net")
         DATABASE_NAME: str = os.getenv("DATABASE_NAME", "invoice_risk_scanner")
         MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "")

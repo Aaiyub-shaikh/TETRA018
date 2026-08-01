@@ -43,6 +43,7 @@ export interface UploadResponse {
   recommendations?: string;
   ai_summary?: string;
   ai_explanation?: string;
+  risk_explanations?: RiskExplanation[];
 }
 
 export interface InvoiceDetailResponse {
@@ -56,6 +57,21 @@ export interface InvoiceDetailResponse {
   gemini_analysis?: string;
   recommendations?: string;
   risk_summary?: string;
+  risk_explanations?: RiskExplanation[];
+}
+
+export interface RiskExplanation {
+  type: string;
+  severity: 'Low' | 'Medium' | 'High';
+  reason: string;
+  impact: string;
+  recommendation: string;
+  evidence?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'ai';
+  content: string;
 }
 
 // Invoice record as stored in MongoDB invoices collection
@@ -350,4 +366,13 @@ export async function fetchAuditTrail(limit = 50, search?: string, severity?: st
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (severity) url += `&severity=${encodeURIComponent(severity)}`;
   return apiFetch(url);
+}
+
+// ─── AI Chat ─────────────────────────────────────────────────────────────
+
+export async function chatAboutInvoice(invoiceId: string, question: string): Promise<{ answer: string; invoice_id: string }> {
+  return apiFetch('/api/chat/invoice', {
+    method: 'POST',
+    body: JSON.stringify({ invoice_id: invoiceId, question }),
+  });
 }

@@ -271,6 +271,8 @@ async def get_invoice(invoice_id: str):
             "confidence": doc.get("confidence") or doc.get("risk", {}).get("confidence") or 0,
         }
 
+        risk_explanations = doc.get("risk_explanations") or (audit_doc or {}).get("risk_explanations") or []
+
         return {
             "invoice": doc,
             "risk": risk_data,
@@ -278,6 +280,7 @@ async def get_invoice(invoice_id: str):
             "gemini_analysis": doc.get("gemini_analysis") or (audit_doc or {}).get("gemini_analysis") or doc.get("aiExplanation") or "",
             "recommendations": doc.get("recommendations") or (audit_doc or {}).get("recommendations") or "",
             "risk_summary": doc.get("risk_summary") or (audit_doc or {}).get("risk_summary") or doc.get("summary") or "",
+            "risk_explanations": risk_explanations,
         }
     except HTTPException:
         raise

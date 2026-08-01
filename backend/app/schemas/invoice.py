@@ -42,6 +42,7 @@ class InvoiceAnalysisResponse(BaseModel):
     recommendations: str = ""
     ai_summary: str = ""
     ai_explanation: str = ""
+    risk_explanations: List[Dict[str, Any]] = []
 
 
 class InvoiceDetailsResponse(BaseModel):
@@ -51,3 +52,4 @@ class InvoiceDetailsResponse(BaseModel):
     gemini_analysis: str = ""
     recommendations: str = ""
     risk_summary: str = ""
+    risk_explanations: List[Dict[str, Any]] = []

@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.services.parser.invoice_parser import parse_invoice
 from app.services.risk.risk_engine import run_risk_engine
 from app.services.gemini_service import generate_ai_explanation
+from app.services.risk_explainer import generate_risk_explanations
 from app.schemas.invoice import InvoiceAnalysisResponse
 from app.database.mongodb import get_database
 
@@ -107,6 +108,15 @@ async def upload_invoice(file: UploadFile = File(...)):
         risk_level=risk_result.get("risk_level", "Low"),
     )
 
+    # Generate detailed risk explanations for each flag
+    risk_explanations = generate_risk_explanations(
+        invoice=fields,
+        flags=risk_result.get("flags", []),
+        risk_score=risk_result.get("risk_score", 0.0),
+        risk_level=risk_result.get("risk_level", "Low"),
+        validation_details=risk_result.get("validation_details"),
+    )
+
     # 5. Connect to MongoDB Atlas and insert results
     db = get_database()
     if db is not None:
@@ -135,6 +145,7 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "risk_summary": risk_summary,
                 "gemini_analysis": gemini_analysis,
                 "recommendations": recommendations,
+                "risk_explanations": risk_explanations,
                 "summary": risk_summary,
                 "aiExplanation": gemini_analysis,
             }
@@ -269,4 +280,5 @@ async def upload_invoice(file: UploadFile = File(...)):
         risk_summary=risk_summary,
         gemini_analysis=gemini_analysis,
         recommendations=recommendations,
+        risk_explanations=risk_explanations,
     )
