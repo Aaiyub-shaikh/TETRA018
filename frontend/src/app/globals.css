@@ -94,3 +94,42 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* Print-Specific Styles to Export Reports Content-Only */
+@media print {
+  aside,
+  header,
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  div.pl-64 {
+    padding-left: 0 !important;
+  }
+  
+  main {
+    padding-top: 10px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .rounded-2xl {
+    border-radius: 8px !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Ensure charts and tables fill the printable width nicely */
+  .recharts-responsive-container {
+    width: 100% !important;
+  }
+}
+
