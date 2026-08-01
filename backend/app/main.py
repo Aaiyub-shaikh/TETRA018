@@ -1,11 +1,12 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
+
 from app.core.config import settings
 from app.api.router import api_router
 from app.database.mongodb import init_mongodb, close_mongodb
-import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,13 +18,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    description="AI-Powered Invoice Risk Scanner - Full Ingestion, OCR & Audit Engine API",
+    version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
 )
 
-# CORS configuration
+# Configure CORS for Next.js frontend integration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,18 +35,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the API router
+# Include main API router under settings.API_V1_STR ("/api")
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Mount upload directory as static files to allow access to scans
+# Also mount api_router without prefix so /api/v1/audit works seamlessly
+app.include_router(api_router)
+
+# Mount upload directory as static files to allow access to scan images/PDFs
 if os.path.exists(settings.UPLOAD_DIR):
     app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-@app.get("/")
-def read_root():
+@app.get("/", tags=["Root"])
+def root():
     return {
+        "message": "AI-Powered Invoice Risk Scanner API",
         "status": "online",
-        "service": "TETRA AI Risk Scanner Ingestion Engine",
+        "service": settings.PROJECT_NAME,
         "version": "1.0.0",
-        "docs_url": "/docs"
+        "docs": "/docs",
+        "health": "/health",
+        "auditEndpoint": "/api/v1/audit/{invoice_number}"
     }
+
+@app.get("/health", tags=["Health Check"])
+def health_check():
+    return {
+        "status": "healthy",
+        "service": settings.PROJECT_NAME,
+        "version": "1.0.0"
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,11 +1,17 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from app.core.config import settings
 import logging
+from app.core.config import settings
 
 logger = logging.getLogger("app.database.mongodb")
 
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient
+    HAS_MOTOR = True
+except ImportError:
+    HAS_MOTOR = False
+    from pymongo import MongoClient
+
 class MongoDB:
-    client: AsyncIOMotorClient = None
+    client = None
     db = None
 
 db_helper = MongoDB()
@@ -15,7 +21,10 @@ def init_mongodb():
     if db_helper.client is None:
         try:
             logger.info(f"Connecting to MongoDB Atlas at URI: {settings.MONGODB_URI[:35]}...")
-            db_helper.client = AsyncIOMotorClient(settings.MONGODB_URI)
+            if HAS_MOTOR:
+                db_helper.client = AsyncIOMotorClient(settings.MONGODB_URI)
+            else:
+                db_helper.client = MongoClient(settings.MONGODB_URI)
             db_helper.db = db_helper.client[settings.DATABASE_NAME]
             logger.info("Successfully established connection to MongoDB Atlas database.")
         except Exception as e:
@@ -24,6 +33,8 @@ def init_mongodb():
 
 def get_database():
     """Retrieve the database reference context."""
+    if db_helper.db is None:
+        init_mongodb()
     return db_helper.db
 
 def close_mongodb():
