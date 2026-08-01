@@ -7,13 +7,12 @@ from datetime import datetime
 router = APIRouter()
 
 class LedgerEntry(BaseModel):
-    invoiceNumber: str
-    vendorName: str
+    invoiceNo: str
+    vendor: str
     gstin: Optional[str] = ""
     invoiceDate: Optional[str] = ""
-    amount: float = 0.0
+    invoiceSum: float = 0.0
     taxAmount: Optional[float] = 0.0
-    status: Optional[str] = "Recorded"
 
 @router.get("/ledger", summary="List all purchase ledger entries")
 async def list_ledger():

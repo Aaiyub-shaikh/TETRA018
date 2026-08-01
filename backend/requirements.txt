@@ -19,3 +19,5 @@ regex==2025.7.34
 motor==3.7.1
 pymongo==4.17.0
 dnspython==2.8.0
+
+reportlab==5.0.0

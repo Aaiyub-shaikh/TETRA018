@@ -12,6 +12,14 @@ export const StatsGrid: React.FC = () => {
     fetchDashboardStats()
       .then(setStats)
       .catch(() => { /* silently ignore — page-level toast handles errors */ });
+
+    const interval = setInterval(() => {
+      fetchDashboardStats()
+        .then(setStats)
+        .catch(() => {});
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const s = stats ?? {

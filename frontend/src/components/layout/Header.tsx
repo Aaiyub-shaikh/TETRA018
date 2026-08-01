@@ -2,10 +2,22 @@
 
 import React from 'react';
 import { Search, Bell, HelpCircle } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [query, setQuery] = React.useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    if (pathname === '/vendors') {
+      router.push(`/vendors?search=${encodeURIComponent(query)}`);
+    } else {
+      router.push(`/invoices?search=${encodeURIComponent(query)}`);
+    }
+  };
 
   // Get dynamic page title from path
   const getPageTitle = () => {
@@ -35,14 +47,16 @@ export const Header: React.FC = () => {
       {/* Actions */}
       <div className="flex items-center gap-5">
         {/* Search Input bar */}
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+        <form onSubmit={handleSearch} className="relative w-64">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search invoices, vendors..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-9 pr-4 text-xs outline-none transition-all duration-200 focus:border-[#3E0856] focus:bg-white focus:ring-1 focus:ring-[#3E0856]"
           />
-        </div>
+        </form>
 
         {/* Support */}
         <button className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">

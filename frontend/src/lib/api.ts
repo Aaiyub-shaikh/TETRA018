@@ -1,4 +1,4 @@
-// ─── Types matching FastAPI responses ────────────────────────────────────────
+// ─── Types matching actual MongoDB collection schemas ────────────────────────
 
 export interface InvoiceFlag {
   check: string;
@@ -39,49 +39,72 @@ export interface UploadResponse {
 }
 
 // Invoice record as stored in MongoDB invoices collection
+// DB uses camelCase: invoiceNumber, vendorName, gstin, invoiceDate, taxableValue, taxAmount, totalAmount, fileName
 export interface InvoiceRecord {
-  invoice_number: string | null;
-  vendor: string;
-  vendor_gstin: string | null;
-  invoice_date: string;
-  tax_amount: number;
-  total_amount: number;
-  total: number;
-  risk_score: number;
-  risk_level: 'Low' | 'Medium' | 'High';
-  confidence: number;
-  status: string;
-  filename: string;
-  upload_time: string;
-  created_at: string;
-  flag_count: number;
+  _id?: string;
+  invoiceNo?: string;        // purchase_ledger uses invoiceNo
+  invoiceNumber?: string;
+  invoice_number?: string;
+  vendorName?: string;
+  vendor?: string;
+  gstin?: string;
+  vendor_gstin?: string;
+  invoiceDate?: string;
+  invoice_date?: string;
+  taxableValue?: number;
+  taxable_amount?: number;
+  invoiceSum?: number;       // purchase_ledger uses invoiceSum for total
+  taxAmount?: number;
+  tax_amount?: number;
+  totalAmount?: number;
+  total_amount?: number;
+  total?: number;
+  fileName?: string;
+  filename?: string;
+  status?: string;
+  riskLevel?: string;
+  risk_level?: string;
+  riskScore?: number;
+  risk_score?: number;
+  confidence?: number;
+  flagCount?: number;
+  flag_count?: number;
+  flags?: InvoiceFlag[];
   exceptions?: InvoiceFlag[];
+  upload_time?: string;
+  uploadTime?: string;
+  created_at?: string;
+  rawText?: string;
+  raw_text?: string;
+  [key: string]: any;        // allow extra fields from MongoDB
 }
 
 // Vendor record from vendor_master
+// DB uses: vendor (not vendorName), gstin, email, phone, address
 export interface VendorRecord {
-  vendorNo?: string;
-  vendorName: string;
+  vendor: string;
   gstin: string;
   email?: string;
   phone?: string;
   address?: string;
-  country?: string;
-  status: string;
   created_at?: string;
+  [key: string]: any;
 }
 
 // Ledger record from purchase_ledger
+// DB uses: invoiceNo, vendor, gstin, invoiceDate, invoiceSum, taxAmount
 export interface LedgerRecord {
-  invoiceNumber: string;
-  vendorName: string;
-  vendorNo?: string;
+  invoiceNo: string;
+  vendor: string;
   gstin?: string;
-  invoiceDate: string;
-  amount: number;
+  invoiceDate?: string;
+  invoiceSum: number;
   taxAmount?: number;
-  status: string;
+  email?: string;
+  phone?: string;
+  address?: string;
   created_at?: string;
+  [key: string]: any;
 }
 
 // Dashboard stats
@@ -103,35 +126,32 @@ export interface AuditEvent {
   processing_time?: number;
 }
 
-// Add vendor payload
+// Add vendor payload (matches DB schema: vendor, gstin, email, phone, address)
 export interface AddVendorPayload {
-  vendorName: string;
+  vendor: string;
   gstin: string;
   email?: string;
   phone?: string;
   address?: string;
-  country?: string;
-  status?: string;
 }
 
-// Add ledger payload
+// Add ledger payload (matches DB schema: invoiceNo, vendor, gstin, invoiceDate, invoiceSum, taxAmount)
 export interface AddLedgerPayload {
-  invoiceNumber: string;
-  vendorName: string;
+  invoiceNo: string;
+  vendor: string;
   gstin?: string;
   invoiceDate?: string;
-  amount: number;
+  invoiceSum: number;
   taxAmount?: number;
-  status?: string;
 }
 
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
@@ -145,6 +165,42 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(message);
   }
   return res.json() as Promise<T>;
+}
+
+// ─── Helper: normalize invoice record field access ────────────────────────────
+
+export function inv_invoiceNumber(inv: InvoiceRecord): string {
+  return inv.invoiceNumber || inv.invoice_number || inv.invoiceNo || '—';
+}
+export function inv_vendor(inv: InvoiceRecord): string {
+  return inv.vendorName || inv.vendor || '—';
+}
+export function inv_gstin(inv: InvoiceRecord): string {
+  return inv.gstin || inv.vendor_gstin || '—';
+}
+export function inv_date(inv: InvoiceRecord): string {
+  return inv.invoiceDate || inv.invoice_date || '';
+}
+export function inv_taxAmount(inv: InvoiceRecord): number {
+  return inv.taxAmount ?? inv.tax_amount ?? 0;
+}
+export function inv_totalAmount(inv: InvoiceRecord): number {
+  return inv.totalAmount ?? inv.total_amount ?? inv.invoiceSum ?? inv.total ?? 0;
+}
+export function inv_riskScore(inv: InvoiceRecord): number {
+  if (inv.riskScore != null) return inv.riskScore;
+  if (inv.risk_score != null) return inv.risk_score;
+  const rl = inv.riskLevel || inv.risk_level || '';
+  return rl === 'High' ? 85 : rl === 'Medium' ? 45 : 10;
+}
+export function inv_confidence(inv: InvoiceRecord): number | null {
+  return inv.confidence ?? null;
+}
+export function inv_riskLevel(inv: InvoiceRecord): string {
+  return inv.riskLevel || inv.risk_level || 'Low';
+}
+export function inv_uploadTime(inv: InvoiceRecord): string {
+  return inv.upload_time || inv.uploadTime || inv.created_at || '';
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -181,8 +237,20 @@ export async function uploadInvoice(
 
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
-export async function fetchInvoices(): Promise<{ invoices: InvoiceRecord[]; total: number }> {
-  return apiFetch('/api/invoices');
+export async function fetchInvoices(filters?: { search?: string; status?: string; risk?: string; vendor?: string; date?: string }): Promise<{ invoices: InvoiceRecord[]; total: number }> {
+  let url = '/api/invoices';
+  const params: string[] = [];
+  if (filters) {
+    if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+    if (filters.status) params.push(`status=${encodeURIComponent(filters.status)}`);
+    if (filters.risk) params.push(`risk=${encodeURIComponent(filters.risk)}`);
+    if (filters.vendor) params.push(`vendor=${encodeURIComponent(filters.vendor)}`);
+    if (filters.date) params.push(`date=${encodeURIComponent(filters.date)}`);
+  }
+  if (params.length > 0) {
+    url += '?' + params.join('&');
+  }
+  return apiFetch(url);
 }
 
 // ─── Vendors ─────────────────────────────────────────────────────────────────
@@ -217,8 +285,31 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   return apiFetch('/api/dashboard/stats');
 }
 
+export async function fetchDashboardSummary(): Promise<any> {
+  return apiFetch('/api/dashboard/summary');
+}
+
+export async function fetchDashboardMonthlyTrend(): Promise<any[]> {
+  return apiFetch('/api/dashboard/monthly-trend');
+}
+
+export async function fetchDashboardAnomalies(): Promise<any[]> {
+  return apiFetch('/api/dashboard/anomalies');
+}
+
+export async function fetchDashboardFlagged(): Promise<InvoiceRecord[]> {
+  return apiFetch('/api/dashboard/flagged');
+}
+
+export async function fetchDashboardActivity(): Promise<any[]> {
+  return apiFetch('/api/dashboard/activity');
+}
+
 // ─── Audit ────────────────────────────────────────────────────────────────────
 
-export async function fetchAuditTrail(limit = 50): Promise<{ events: AuditEvent[]; total: number }> {
-  return apiFetch(`/api/audit?limit=${limit}`);
+export async function fetchAuditTrail(limit = 50, search?: string, severity?: string): Promise<{ events: AuditEvent[]; total: number }> {
+  let url = `/api/audit?limit=${limit}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (severity) url += `&severity=${encodeURIComponent(severity)}`;
+  return apiFetch(url);
 }

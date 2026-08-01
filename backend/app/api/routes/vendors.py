@@ -7,13 +7,11 @@ from datetime import datetime
 router = APIRouter()
 
 class VendorCreate(BaseModel):
-    vendorName: str
+    vendor: str
     gstin: str
     email: Optional[str] = ""
     phone: Optional[str] = ""
     address: Optional[str] = ""
-    country: Optional[str] = "India"
-    status: Optional[str] = "Active"
 
 @router.get("/vendors", summary="List all vendors from master")
 async def list_vendors():
@@ -46,7 +44,6 @@ async def add_vendor(vendor: VendorCreate):
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
     try:
-        # Check for duplicate GSTIN
         existing = await db["vendor_master"].find_one({"gstin": vendor.gstin})
         if existing:
             raise HTTPException(status_code=409, detail=f"Vendor with GSTIN {vendor.gstin} already exists")

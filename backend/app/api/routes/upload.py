@@ -123,25 +123,39 @@ async def upload_invoice(file: UploadFile = File(...)):
             else:
                 status = "High Risk"
 
-            # Insert metadata into invoices (full fields for frontend display)
+            # Insert metadata into invoices (aligned with MongoDB collection schema)
             invoice_doc = {
+                "fileName": filename,
                 "filename": filename,
                 "upload_time": datetime.utcnow().isoformat(),
+                "uploadTime": datetime.utcnow().isoformat(),
                 "created_at": datetime.utcnow().isoformat(),
+                "createdAt": datetime.utcnow().isoformat(),
+                "invoiceNumber": fields.get("invoice_number"),
                 "invoice_number": fields.get("invoice_number"),
+                "vendorName": fields.get("vendor_name"),
                 "vendor": fields.get("vendor_name"),
+                "gstin": fields.get("vendor_gstin"),
                 "vendor_gstin": fields.get("vendor_gstin"),
+                "invoiceDate": fields.get("date"),
                 "invoice_date": fields.get("date"),
+                "taxableValue": fields.get("taxable_amount", 0.0),
                 "taxable_amount": fields.get("taxable_amount", 0.0),
+                "taxAmount": fields.get("tax_amount", 0.0),
                 "tax_amount": fields.get("tax_amount", 0.0),
+                "totalAmount": fields.get("total_amount", 0.0),
                 "total": fields.get("total_amount", 0.0),
                 "total_amount": fields.get("total_amount", 0.0),
+                "riskLevel": risk_level,
                 "risk_level": risk_level,
+                "riskScore": risk_result.get("risk_score", 0.0),
                 "risk_score": risk_result.get("risk_score", 0.0),
                 "confidence": risk_result.get("confidence", 100.0),
                 "status": status,
+                "flagCount": risk_result.get("flag_count", 0),
                 "flag_count": risk_result.get("flag_count", 0),
                 "exceptions": risk_result.get("flags", []),
+                "rawText": raw_text,
                 "raw_text": raw_text,
             }
             await db["invoices"].insert_one(invoice_doc)
