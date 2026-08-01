@@ -24,6 +24,9 @@ class RiskAssessment(BaseModel):
     confidence: float
     flags: List[RiskFlag] = []
     flag_count: int = 0
+    summary: Optional[str] = None
+    ai_explanation: Optional[str] = None
+
 
 class InvoiceAnalysisResponse(BaseModel):
     success: bool

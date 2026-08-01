@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Upload,
   Receipt,
+  Sparkles,
 } from 'lucide-react';
+
 import { getLastResult, clearLastResult } from '@/lib/invoiceStore';
 import type { UploadResponse, InvoiceFlag } from '@/lib/api';
 
@@ -58,9 +60,65 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function renderFormattedNarrative(text: string) {
+  if (!text) return null;
+  const paragraphs = text.split(/\n\n+/);
+
+  return (
+    <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-purple-100/80 shadow-xs">
+      {paragraphs.map((para, pIdx) => {
+        const lines = para.split('\n');
+        return (
+          <div key={pIdx} className="space-y-1">
+            {lines.map((line, lIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return null;
+
+              const parts = line.split(/(\*\*.*?\*\*)/g);
+              const formattedContent = parts.map((part, partIdx) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return (
+                    <strong key={partIdx} className="font-bold text-[#3E0856]">
+                      {part.slice(2, -2)}
+                    </strong>
+                  );
+                }
+                return part;
+              });
+
+              if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-2 pl-2 my-0.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#3E0856] mt-1.5 shrink-0" />
+                    <span className="flex-1">{formattedContent}</span>
+                  </div>
+                );
+              }
+
+              if (/^\d+\.\s/.test(trimmed)) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-2 pl-1 my-1">
+                    <span className="font-bold text-[#3E0856] text-[11px] shrink-0">
+                      {trimmed.match(/^\d+\./)?.[0]}
+                    </span>
+                    <span className="flex-1">{formattedContent}</span>
+                  </div>
+                );
+              }
+
+              return <p key={lIdx}>{formattedContent}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ResultPage() {
+
   const router = useRouter();
   const [data, setData] = useState<UploadResponse | null>(null);
 
@@ -287,7 +345,44 @@ export default function ResultPage() {
             </div>
           </div>
 
+          {/* ── LLM Reasoning / Gemini Forensic Narrative Card ────────────── */}
+          <div className="rounded-2xl border border-[#3E0856]/15 bg-gradient-to-r from-[#3E0856]/5 via-purple-50/50 to-[#FAAE62]/5 p-6 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3E0856] text-[#FAAE62] shadow-sm">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 tracking-tight">
+                    Gemini AI Forensic Audit Narrative
+                  </h3>
+                  <p className="text-[10px] text-purple-700 font-semibold">
+                    Automated LLM reasoning &amp; compliance summary
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#3E0856]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#3E0856] border border-[#3E0856]/15">
+                Gemini 2.5 Active
+              </span>
+            </div>
+
+            {risk.summary && (
+              <h4 className="text-xs font-bold text-[#3E0856] border-b border-purple-100 pb-2">
+                {risk.summary}
+              </h4>
+            )}
+
+            {renderFormattedNarrative(
+              risk.ai_explanation ||
+                (risk.flags.length > 0
+                  ? `FastAPI AI Risk Engine evaluated document ${filename}. Detected ${risk.flag_count} anomaly check flag(s) with an aggregated risk score of ${risk.risk_score}%. Review vendor master records and purchase ledger total match before approving payment authorization.`
+                  : `FastAPI AI Risk Engine evaluated document ${filename}. All OCR structural fields matched approved database entries with 100% confidence. No compliance risk detected.`)
+            )}
+          </div>
+
+
           {/* Exceptions / Flags Card */}
+
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex-1">
             <div className="flex items-center gap-2 mb-5">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3E0856]/5 text-[#3E0856] border border-[#3E0856]/10">

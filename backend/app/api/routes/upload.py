@@ -102,10 +102,14 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "raw_text": raw_text,
                 "extracted_fields": fields,
                 "exceptions": risk_result.get("flags", []),
+                "summary": risk_result.get("summary", ""),
+                "ai_explanation": risk_result.get("ai_explanation", ""),
                 "risk": {
                     "risk_score": risk_result.get("risk_score", 0.0),
                     "risk_level": risk_result.get("risk_level", "Low"),
-                    "confidence": risk_result.get("confidence", 100.0)
+                    "confidence": risk_result.get("confidence", 100.0),
+                    "summary": risk_result.get("summary", ""),
+                    "ai_explanation": risk_result.get("ai_explanation", "")
                 },
                 "timestamp": datetime.utcnow().isoformat(),
                 "processing_time": processing_time,
@@ -142,6 +146,8 @@ async def upload_invoice(file: UploadFile = File(...)):
                 "status": status,
                 "flag_count": risk_result.get("flag_count", 0),
                 "exceptions": risk_result.get("flags", []),
+                "summary": risk_result.get("summary", ""),
+                "ai_explanation": risk_result.get("ai_explanation", ""),
                 "raw_text": raw_text,
             }
             await db["invoices"].insert_one(invoice_doc)
@@ -174,5 +180,8 @@ async def upload_invoice(file: UploadFile = File(...)):
             "confidence": risk_result.get("confidence", 100.0),
             "flags": risk_result.get("flags", []),
             "flag_count": risk_result.get("flag_count", 0),
+            "summary": risk_result.get("summary", ""),
+            "ai_explanation": risk_result.get("ai_explanation", ""),
         }
     )
+

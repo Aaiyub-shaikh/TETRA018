@@ -19,7 +19,63 @@ import Loader from '@/components/common/Loader';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
+function renderFormattedNarrative(text: string) {
+  if (!text) return null;
+  const paragraphs = text.split(/\n\n+/);
+
+  return (
+    <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed bg-gradient-to-r from-purple-50/50 to-indigo-50/30 rounded-xl p-4 border border-purple-100/80 shadow-xs">
+      {paragraphs.map((para, pIdx) => {
+        const lines = para.split('\n');
+        return (
+          <div key={pIdx} className="space-y-1">
+            {lines.map((line, lIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return null;
+
+              const parts = line.split(/(\*\*.*?\*\*)/g);
+              const formattedContent = parts.map((part, partIdx) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return (
+                    <strong key={partIdx} className="font-bold text-[#3E0856]">
+                      {part.slice(2, -2)}
+                    </strong>
+                  );
+                }
+                return part;
+              });
+
+              if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-2 pl-2 my-0.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#3E0856] mt-1.5 shrink-0" />
+                    <span className="flex-1">{formattedContent}</span>
+                  </div>
+                );
+              }
+
+              if (/^\d+\.\s/.test(trimmed)) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-2 pl-1 my-1">
+                    <span className="font-bold text-[#3E0856] text-[11px] shrink-0">
+                      {trimmed.match(/^\d+\./)?.[0]}
+                    </span>
+                    <span className="flex-1">{formattedContent}</span>
+                  </div>
+                );
+              }
+
+              return <p key={lIdx}>{formattedContent}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function InvoiceDetailPage() {
+
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -143,11 +199,12 @@ export default function InvoiceDetailPage() {
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-bold text-slate-800 text-sm tracking-tight">
-                  AI Compliance Explanation
+                <h3 className="font-bold text-slate-800 text-sm tracking-tight flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[#FAAE62] animate-pulse"></span>
+                  Gemini AI Forensic Audit Explanation
                 </h3>
                 <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                  Risk classification diagnostic report
+                  LLM risk classification &amp; forensic narrative
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-[#3E0856]/5 border border-[#3E0856]/10 px-3 py-1.5 rounded-xl">
@@ -158,11 +215,21 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 font-medium leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
-              {exceptions.length === 0
-                ? 'All compliance validation algorithms checks passed successfully. OCR confidence level is high and matched master databases without exceptions.'
-                : `FastAPI compliance algorithms flagged ${exceptions.length} exception(s). Please review GSTIN alignment, purchase ledger entries, and numerical rate calculations.`}
-            </p>
+            {invoice.summary && (
+              <h4 className="text-xs font-bold text-[#3E0856] border-b border-purple-100 pb-1.5">
+                {invoice.summary}
+              </h4>
+            )}
+
+            {renderFormattedNarrative(
+              invoice.ai_explanation ||
+                invoice.aiExplanation ||
+                (exceptions.length === 0
+                  ? 'All compliance validation algorithm checks passed successfully. OCR confidence level is high and matched master databases without exceptions.'
+                  : `FastAPI compliance algorithms flagged ${exceptions.length} exception(s). Please review GSTIN alignment, purchase ledger entries, and numerical rate calculations.`)
+            )}
+
+
 
             {/* Confidence Ratings */}
             <div className="grid grid-cols-2 gap-4 pt-2">
