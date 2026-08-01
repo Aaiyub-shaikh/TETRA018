@@ -4,10 +4,14 @@ from app.core.config import settings
 
 logger = logging.getLogger("app.ocr")
 
+TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 class OCRService:
     def __init__(self):
-        self._ocr = None  # Lazy-loaded on first use
+        self._ocr = None  # Lazy-loaded PaddleOCR on first use
         self._ocr_available = None  # None = not tried yet
+        self._tesseract_checked = False
+        self._tesseract_available = False
 
     def _get_ocr(self):
         """Lazy-load PaddleOCR on first use so startup is never blocked."""
@@ -27,8 +31,26 @@ class OCRService:
             logger.info("PaddleOCR initialized successfully.")
         except Exception as e:
             self._ocr_available = False
-            logger.warning(f"PaddleOCR unavailable: {e}. Falling back to digital-text-only extraction.")
+            logger.warning(f"PaddleOCR unavailable: {e}. Will use Tesseract fallback for images.")
         return self._ocr
+
+    def _get_tesseract(self):
+        """Check if Tesseract is available and return pytesseract module."""
+        if self._tesseract_checked:
+            return __import__("pytesseract") if self._tesseract_available else None
+        self._tesseract_checked = True
+        try:
+            import pytesseract
+            if os.path.exists(TESSERACT_PATH):
+                pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+            # Quick sanity check
+            pytesseract.get_tesseract_version()
+            self._tesseract_available = True
+            logger.info("Tesseract OCR available as fallback.")
+        except Exception as e:
+            self._tesseract_available = False
+            logger.warning(f"Tesseract not available: {e}")
+        return __import__("pytesseract") if self._tesseract_available else None
 
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """
@@ -91,23 +113,33 @@ class OCRService:
         return "\n".join(ocr_pages)
 
     def extract_text_from_image(self, image_path: str) -> str:
-        """Run PaddleOCR on an image file. Returns empty string if OCR unavailable."""
+        """Run OCR on an image file. Tries PaddleOCR first, then Tesseract fallback."""
+        # Try PaddleOCR first
         ocr = self._get_ocr()
-        if ocr is None:
-            logger.warning("PaddleOCR not available; returning empty text for image.")
-            return ""
-        try:
-            import cv2
-            img = cv2.imread(image_path)
-            if img is None:
-                logger.error(f"Could not read image: {image_path}")
-                return ""
-            result = ocr.ocr(image_path, cls=True)
-            if not result or not result[0]:
-                return ""
-            return "\n".join(line[1][0] for line in result[0])
-        except Exception as e:
-            logger.error(f"PaddleOCR inference error: {e}")
-            return ""
+        if ocr is not None:
+            try:
+                result = ocr.ocr(image_path, cls=True)
+                if result and result[0]:
+                    text = "\n".join(line[1][0] for line in result[0])
+                    if len(text.strip()) > 10:
+                        return text
+            except Exception as e:
+                logger.warning(f"PaddleOCR inference error: {e}")
+
+        # Fallback to Tesseract
+        pytesseract = self._get_tesseract()
+        if pytesseract is not None:
+            try:
+                from PIL import Image
+                img = Image.open(image_path)
+                text = pytesseract.image_to_string(img, lang="eng")
+                if text and text.strip():
+                    logger.info("Used Tesseract fallback for image OCR.")
+                    return text.strip()
+            except Exception as e:
+                logger.error(f"Tesseract OCR error: {e}")
+
+        logger.warning("No OCR engine available; returning empty text for image.")
+        return ""
 
 ocr_service = OCRService()

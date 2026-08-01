@@ -2,6 +2,7 @@ import os
 import logging
 from app.services.parser.pdf_parser import parse_pdf
 from app.services.parser.image_parser import parse_image
+from app.services.parser.csv_parser import parse_csv
 from app.services.ocr.paddle_ocr import ocr_service
 from app.services.ocr.text_cleaner import clean_ocr_text
 from app.services.extractor.field_extractor import extract_all_fields
@@ -10,6 +11,7 @@ logger = logging.getLogger("app.parser.invoice")
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp"}
 PDF_EXTENSION = ".pdf"
+CSV_EXTENSION = ".csv"
 
 def parse_invoice(file_path: str) -> dict:
     """
@@ -21,7 +23,26 @@ def parse_invoice(file_path: str) -> dict:
     method = "none"
     page_count = 1
 
-    if ext == PDF_EXTENSION:
+    if ext == CSV_EXTENSION:
+        logger.info(f"Parsing CSV: {file_path}")
+        result = parse_csv(file_path)
+        if not result.get("success"):
+            return {
+                "success": False,
+                "error": result.get("error", "Failed to parse CSV"),
+                "raw_text": "",
+                "fields": {}
+            }
+        # CSV returns structured fields directly — no OCR needed
+        return {
+            "success": True,
+            "raw_text": f"CSV import: {os.path.basename(file_path)}",
+            "page_count": 1,
+            "extraction_method": "csv",
+            "fields": result.get("fields", {})
+        }
+
+    elif ext == PDF_EXTENSION:
         logger.info(f"Parsing PDF: {file_path}")
         result = parse_pdf(file_path)
         raw_text = result.get("text", "")

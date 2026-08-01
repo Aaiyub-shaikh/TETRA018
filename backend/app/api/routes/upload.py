@@ -15,7 +15,7 @@ logger = logging.getLogger("app.routes.upload")
 
 router = APIRouter()
 
-ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}
+ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp", ".csv"}
 MAX_FILE_SIZE_MB = 20
 
 @router.post("/upload", response_model=InvoiceAnalysisResponse, summary="Upload and analyze an invoice")

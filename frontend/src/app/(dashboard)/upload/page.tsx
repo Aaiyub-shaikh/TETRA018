@@ -202,7 +202,7 @@ export default function UploadPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.png,.jpeg,.jpg"
+            accept=".pdf,.png,.jpeg,.jpg,.tiff,.tif,.bmp,.webp,.csv"
             onChange={fileChangeHandler}
             disabled={isUploading}
             className="hidden"
@@ -226,8 +226,8 @@ export default function UploadPage() {
                 Drag and drop your invoice here
               </h3>
               <p className="text-[11px] text-slate-400 font-medium mt-1 leading-normal max-w-sm">
-                Supports PDF, PNG, or JPEG formats. Documents are scanned instantly by our layout
-                parser.
+                Supports PDF, images (PNG, JPEG, TIFF, BMP, WebP), and CSV files. Documents are
+                scanned instantly by our layout parser.
               </p>
 
               <span className="inline-flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-1 text-[10px] font-bold text-[#3E0856] mt-4 border border-slate-200/50">
