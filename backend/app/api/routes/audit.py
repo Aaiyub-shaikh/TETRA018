@@ -6,27 +6,21 @@ from app.database.mongodb import get_database
 
 router = APIRouter()
 
-<<<<<<< HEAD
-
-@router.get("/audit", summary="Get audit logs from MongoDB")
+@router.get("/logs", summary="Get audit logs from MongoDB")
+@router.get("/audit", summary="Get audit logs from MongoDB", include_in_schema=False)
+@router.get("", summary="Get audit logs from MongoDB", include_in_schema=False)
 async def get_audit_trail(
     limit: int = 50,
     search: str = None,
     severity: str = None
 ):
-=======
-@router.get("/logs", summary="Get audit logs from MongoDB")
-@router.get("", summary="Get audit logs from MongoDB", include_in_schema=False)
-async def get_audit_trail(limit: int = 50):
     """
     Returns recent audit execution records stored in the audit_results collection.
     """
->>>>>>> 93077686a752480555fe088eed2178d29007e31a
     db = get_database()
     if db is None:
         return {"events": [], "total": 0}
     try:
-<<<<<<< HEAD
         query = {}
         
         # 1. Severity filter
@@ -56,9 +50,6 @@ async def get_audit_trail(limit: int = 50):
                 query.pop("$or")
 
         cursor = db["audit_results"].find(query).sort("timestamp", -1).limit(limit)
-=======
-        cursor = db["audit_results"].find({}, {"_id": 0}).sort("auditedAt", -1).limit(limit)
->>>>>>> 93077686a752480555fe088eed2178d29007e31a
         events = await cursor.to_list(length=limit)
         
         # Format events to have standardized fields
