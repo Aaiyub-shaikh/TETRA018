@@ -1,5 +1,3 @@
-import fitz  # PyMuPDF
-import pdfplumber
 import os
 import logging
 from app.core.config import settings
@@ -41,6 +39,7 @@ class OCRService:
         """
         # 1. Try pdfplumber first
         try:
+            import pdfplumber
             with pdfplumber.open(pdf_path) as pdf:
                 pages = [p.extract_text() or "" for p in pdf.pages]
                 text = "\n".join(pages)
@@ -52,6 +51,7 @@ class OCRService:
 
         # 2. Try PyMuPDF as direct fallback for text
         try:
+            import fitz  # PyMuPDF
             doc = fitz.open(pdf_path)
             pages = [doc[i].get_text("text") for i in range(len(doc))]
             doc.close()
@@ -66,6 +66,7 @@ class OCRService:
         logger.info("PDF has less than 50 chars of selectable text. Launching image OCR fallback...")
         ocr_pages = []
         try:
+            import fitz  # PyMuPDF
             doc = fitz.open(pdf_path)
             for i in range(len(doc)):
                 pix = doc[i].get_pixmap(dpi=150)

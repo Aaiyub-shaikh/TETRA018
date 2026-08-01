@@ -1,5 +1,3 @@
-import fitz  # PyMuPDF
-import pdfplumber
 import logging
 
 logger = logging.getLogger("app.parser.pdf")
@@ -15,6 +13,7 @@ def parse_pdf(pdf_path: str) -> dict:
     
     # --- Attempt 1: pdfplumber (best for tabular/structured PDFs) ---
     try:
+        import pdfplumber
         with pdfplumber.open(pdf_path) as pdf:
             page_count = len(pdf.pages)
             pages_text = []
@@ -31,6 +30,7 @@ def parse_pdf(pdf_path: str) -> dict:
 
     # --- Attempt 2: PyMuPDF ---
     try:
+        import fitz  # PyMuPDF
         doc = fitz.open(pdf_path)
         page_count = len(doc)
         pages_text = [doc[i].get_text("text") for i in range(page_count)]

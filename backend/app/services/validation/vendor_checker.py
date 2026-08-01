@@ -1,9 +1,18 @@
 import re
 import logging
-from rapidfuzz import fuzz
 from app.database.mongodb import get_database
 
 logger = logging.getLogger("app.validation.vendor")
+
+try:
+    from rapidfuzz import fuzz
+    def calculate_similarity(s1: str, s2: str) -> float:
+        return fuzz.token_sort_ratio(s1.lower(), s2.lower())
+except ImportError:
+    def calculate_similarity(s1: str, s2: str) -> float:
+        if not s1 or not s2:
+            return 0.0
+        return 100.0 if s1.strip().lower() == s2.strip().lower() else 50.0
 
 async def check_vendor(vendor_name: str, vendor_gstin: str) -> dict:
     """
@@ -28,9 +37,9 @@ async def check_vendor(vendor_name: str, vendor_gstin: str) -> dict:
     
     async for doc in cursor:
         master_name = doc.get("vendorName") or doc.get("name") or doc.get("vendor_name", "")
-        similarity = fuzz.token_sort_ratio(
-            str(vendor_name or "").lower(),
-            str(master_name or "").lower()
+        similarity = calculate_similarity(
+            str(vendor_name or ""),
+            str(master_name or "")
         )
         if similarity > best_similarity:
             best_similarity = similarity
