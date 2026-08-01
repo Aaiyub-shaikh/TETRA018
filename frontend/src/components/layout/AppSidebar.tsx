@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -21,6 +21,7 @@ import Logo from '@/components/common/Logo';
 
 export const AppSidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
 
   const menuItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -106,13 +107,17 @@ export const AppSidebar: React.FC = () => {
           );
         })}
 
-        <Link
-          href="/login"
-          className="group flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50/50 transition-all duration-200"
+        <button
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            router.push('/login');
+          }}
+          className="group flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50/50 transition-all duration-200 cursor-pointer text-left"
         >
           <LogOut className="h-4.5 w-4.5 text-rose-400 group-hover:text-rose-600" />
           <span>Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

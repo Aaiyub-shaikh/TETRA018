@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from typing import Dict, Any
 from app.database.mongodb import get_database
 from app.services.risk.risk_engine import run_risk_engine
 from bson import ObjectId
@@ -174,7 +175,7 @@ async def get_invoice_csv(invoice_id: str):
         raise HTTPException(status_code=500, detail=f"CSV generation failed: {e}")
 
 
-@router.get("/invoices/{invoice_id}", summary="Get invoice by ID or invoice number")
+@router.get("/invoices/{invoice_id}", response_model=Dict[str, Any], summary="Get invoice by ID or invoice number")
 async def get_invoice(invoice_id: str):
     db = get_database()
     if db is None:
@@ -197,21 +198,32 @@ async def get_invoice(invoice_id: str):
             doc = await db["invoices"].find_one({"filename": {"$regex": invoice_id, "$options": "i"}}, {"_id": 0})
         if not doc:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        
-        # Enrich on-the-fly if ai_explanation or summary is missing
-        if not doc.get("ai_explanation") or not doc.get("summary"):
-            try:
-                from app.services.gemini_service import generate_ai_explanation
-                exceptions = doc.get("exceptions", [])
-                score = doc.get("risk_score", 0)
-                level = doc.get("risk_level", "Low")
-                summary, ai_explanation = generate_ai_explanation(doc, exceptions, score, level)
-                doc["summary"] = summary
-                doc["ai_explanation"] = ai_explanation
-            except Exception:
-                pass
 
-        return doc
+        # Always convert ObjectId to string
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
 
+        # If gemini fields are not present on the invoice document, try audit results by filename
+        if not doc.get("gemini_analysis") or not doc.get("risk_summary") or not doc.get("recommendations"):
+            audit_doc = await db["audit_results"].find_one({"filename": doc.get("fileName") or doc.get("filename")})
+        else:
+            audit_doc = None
+
+        risk_data = {
+            "risk_score": doc.get("risk_score") or doc.get("risk", {}).get("risk_score") or doc.get("riskScore") or 0,
+            "risk_level": doc.get("risk_level") or doc.get("risk", {}).get("risk_level") or doc.get("riskLevel") or "Low",
+            "confidence": doc.get("confidence") or doc.get("risk", {}).get("confidence") or 0,
+        }
+
+        return {
+            "invoice": doc,
+            "risk": risk_data,
+            "exceptions": doc.get("exceptions") or doc.get("flags") or [],
+            "gemini_analysis": doc.get("gemini_analysis") or (audit_doc or {}).get("gemini_analysis") or doc.get("aiExplanation") or "",
+            "recommendations": doc.get("recommendations") or (audit_doc or {}).get("recommendations") or "",
+            "risk_summary": doc.get("risk_summary") or (audit_doc or {}).get("risk_summary") or doc.get("summary") or "",
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")

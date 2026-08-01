@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 class ExtractedFields(BaseModel):
     invoice_number: Optional[str] = None
@@ -37,3 +37,17 @@ class InvoiceAnalysisResponse(BaseModel):
     raw_text_preview: str  # First 500 chars
     fields: ExtractedFields
     risk: RiskAssessment
+    risk_summary: str = ""
+    gemini_analysis: str = ""
+    recommendations: str = ""
+    ai_summary: str = ""
+    ai_explanation: str = ""
+
+
+class InvoiceDetailsResponse(BaseModel):
+    invoice: Dict[str, Any]
+    risk: Dict[str, Any]
+    exceptions: List[Any]
+    gemini_analysis: str = ""
+    recommendations: str = ""
+    risk_summary: str = ""

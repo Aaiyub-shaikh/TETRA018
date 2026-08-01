@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from app.database.mongodb import get_database
+from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
 
 router = APIRouter()
@@ -39,7 +40,7 @@ async def get_vendor(vendor_id: str):
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
 
 @router.post("/vendors", summary="Add a new vendor to master")
-async def add_vendor(vendor: VendorCreate):
+async def add_vendor(vendor: VendorCreate, current_user: dict = Depends(get_current_user_optional)):
     db = get_database()
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")

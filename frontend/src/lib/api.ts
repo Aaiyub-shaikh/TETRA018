@@ -25,6 +25,8 @@ export interface InvoiceRisk {
   confidence: number;
   flags: InvoiceFlag[];
   flag_count: number;
+  summary?: string;
+  ai_explanation?: string;
 }
 
 export interface UploadResponse {
@@ -36,6 +38,24 @@ export interface UploadResponse {
   raw_text_preview: string;
   fields: InvoiceFields;
   risk: InvoiceRisk;
+  risk_summary?: string;
+  gemini_analysis?: string;
+  recommendations?: string;
+  ai_summary?: string;
+  ai_explanation?: string;
+}
+
+export interface InvoiceDetailResponse {
+  invoice: InvoiceRecord;
+  risk: {
+    risk_score: number;
+    risk_level: 'Low' | 'Medium' | 'High';
+    confidence: number;
+  };
+  exceptions: InvoiceFlag[];
+  gemini_analysis?: string;
+  recommendations?: string;
+  risk_summary?: string;
 }
 
 // Invoice record as stored in MongoDB invoices collection
@@ -152,8 +172,15 @@ export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:80
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { ...headers, ...options?.headers },
     ...options,
   });
   if (!res.ok) {
@@ -231,6 +258,10 @@ export async function uploadInvoice(
     xhr.addEventListener('error', () => reject(new Error('Network error — backend unreachable.')));
     xhr.addEventListener('abort', () => reject(new Error('Upload aborted.')));
     xhr.open('POST', `${BASE_URL}/api/upload`);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
     xhr.send(formData);
   });
 }
@@ -257,6 +288,13 @@ export async function fetchInvoices(filters?: { search?: string; status?: string
 
 export async function fetchVendors(): Promise<{ vendors: VendorRecord[]; total: number }> {
   return apiFetch('/api/vendors');
+}
+
+export async function sendInvoiceReport(invoiceId: string, email: string): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/api/email/send-report', {
+    method: 'POST',
+    body: JSON.stringify({ invoice_id: invoiceId, email }),
+  });
 }
 
 export async function addVendor(payload: AddVendorPayload): Promise<{ success: boolean; vendor: VendorRecord }> {

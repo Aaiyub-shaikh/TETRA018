@@ -123,15 +123,22 @@ async def run_risk_engine(fields: dict) -> dict:
     risk_score, risk_level, confidence = compute_risk_score(flags)
 
     # 8. Generate Gemini AI Forensic Audit Narrative
-    summary = ""
-    ai_explanation = ""
+    risk_summary = ""
+    gemini_analysis = ""
+    recommendations = ""
     try:
         from app.services.gemini_service import generate_ai_explanation
-        summary, ai_explanation = generate_ai_explanation(fields, flags, risk_score, risk_level)
+        risk_summary, gemini_analysis, recommendations = generate_ai_explanation(
+            invoice=fields,
+            issues=flags,
+            risk_score=risk_score,
+            risk_level=risk_level
+        )
     except Exception as err:
         logger.warning(f"Failed to generate Gemini AI narrative: {err}")
-        ai_explanation = f"Evaluated invoice with risk score of {risk_score}% ({risk_level} Risk). Detected {len(flags)} exception(s)."
-        summary = f"{risk_level} Risk Invoice Analysis"
+        gemini_analysis = f"Evaluated invoice with risk score of {risk_score}% ({risk_level} Risk). Detected {len(flags)} exception(s)."
+        risk_summary = f"{risk_level} Risk Invoice Analysis"
+        recommendations = "Review the flagged discrepancies and verify supporting documents before approving payment."
 
     return {
         "risk_score": risk_score,
@@ -139,8 +146,11 @@ async def run_risk_engine(fields: dict) -> dict:
         "confidence": confidence,
         "flags": flags,
         "flag_count": len(flags),
-        "summary": summary,
-        "ai_explanation": ai_explanation,
+        "summary": risk_summary,
+        "ai_explanation": gemini_analysis,
+        "risk_summary": risk_summary,
+        "gemini_analysis": gemini_analysis,
+        "recommendations": recommendations,
         "validation_details": {
             "gst": gst_result,
             "duplicate": dup_result,

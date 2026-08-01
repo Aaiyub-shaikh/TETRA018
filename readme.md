@@ -114,6 +114,13 @@ Create a `.env` file inside the **backend** folder.
 ```env
 MONGODB_URI=your_mongodb_atlas_connection_string
 GEMINI_API_KEY=your_google_gemini_api_key
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_gmail_app_password
+MAIL_FROM=your_email@gmail.com
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_STARTTLS=True
+MAIL_SSL_TLS=False
 ```
 
 > **Note:** If your project configuration requires a database name, also add:
@@ -121,6 +128,17 @@ GEMINI_API_KEY=your_google_gemini_api_key
 ```env
 DATABASE_NAME=your_database_name
 ```
+
+### Gmail App Password Setup
+
+To send email reports from the backend:
+
+1. Sign in to your Google account and enable 2-Step Verification.
+2. Create an App Password for the app you are using.
+3. Paste that App Password into the `MAIL_PASSWORD` variable in the backend `.env` file.
+4. Keep `MAIL_USERNAME` and `MAIL_FROM` as your Gmail address.
+
+> Do not use your normal Gmail password in the backend configuration.
 
 ---
 

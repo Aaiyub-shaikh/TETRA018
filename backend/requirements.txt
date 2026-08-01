@@ -11,7 +11,7 @@ motor==3.7.1
 dnspython==2.8.0
 
 # AI & Machine Learning
-google-genai==0.1.1
+google-genai==0.2.0
 
 # OCR & Document Processing
 pillow==11.3.0
@@ -33,3 +33,5 @@ pymongo==4.17.0
 dnspython==2.8.0
 
 reportlab==5.0.0
+fastapi-mail==1.6.5
+jinja2==3.1.6

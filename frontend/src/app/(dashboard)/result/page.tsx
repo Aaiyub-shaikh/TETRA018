@@ -14,11 +14,13 @@ import {
   TrendingUp,
   Upload,
   Receipt,
+  Mail,
+  Loader2,
   Sparkles,
 } from 'lucide-react';
 
 import { getLastResult, clearLastResult } from '@/lib/invoiceStore';
-import type { UploadResponse, InvoiceFlag } from '@/lib/api';
+import { sendInvoiceReport, type UploadResponse, type InvoiceFlag } from '@/lib/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -121,6 +123,9 @@ export default function ResultPage() {
 
   const router = useRouter();
   const [data, setData] = useState<UploadResponse | null>(null);
+  const [email, setEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const result = getLastResult();
@@ -135,7 +140,26 @@ export default function ResultPage() {
 
   if (!data) return null;
 
-  const { fields, risk, filename, file_size_kb, extraction_method, page_count } = data;
+  const { fields, risk, filename, file_size_kb, extraction_method, page_count, risk_summary, gemini_analysis, recommendations, ai_summary, ai_explanation } = data;
+
+  const handleSendReport = async () => {
+    if (!email.trim()) {
+      setToast({ message: 'Please enter a recipient email address.', type: 'error' });
+      return;
+    }
+
+    setIsSending(true);
+    setToast(null);
+
+    try {
+      const response = await sendInvoiceReport(data?.fields?.invoice_number ?? '', email.trim());
+      setToast({ message: response.message || 'Report sent successfully.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Unable to send report.', type: 'error' });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -160,6 +184,12 @@ export default function ResultPage() {
         </button>
       </div>
 
+      {toast && (
+        <div className={`rounded-xl border px-4 py-3 text-sm font-semibold ${toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* File meta strip */}
       <div className="flex flex-wrap gap-3">
         {[
@@ -176,6 +206,37 @@ export default function ResultPage() {
             <span className="font-bold text-slate-700">{val}</span>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3E0856]/5 text-[#3E0856] border border-[#3E0856]/10">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 tracking-tight">Email Report</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Send the audit report as a PDF to any recipient</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="recipient@example.com"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#3E0856] focus:bg-white sm:w-72"
+            />
+            <button
+              onClick={handleSendReport}
+              disabled={isSending}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#3E0856] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#3E0856]/90 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+              {isSending ? 'Sending...' : 'Send Report'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main Grid */}
@@ -362,21 +423,29 @@ export default function ResultPage() {
                 </div>
               </div>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#3E0856]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#3E0856] border border-[#3E0856]/15">
-                Gemini 2.5 Active
+                Gemini Active
               </span>
             </div>
 
-            {risk.summary && (
+            {(risk_summary || risk.summary) && (
               <h4 className="text-xs font-bold text-[#3E0856] border-b border-purple-100 pb-2">
-                {risk.summary}
+                {risk_summary || risk.summary}
               </h4>
             )}
 
             {renderFormattedNarrative(
-              risk.ai_explanation ||
+              gemini_analysis ||
+                risk.ai_explanation ||
                 (risk.flags.length > 0
                   ? `FastAPI AI Risk Engine evaluated document ${filename}. Detected ${risk.flag_count} anomaly check flag(s) with an aggregated risk score of ${risk.risk_score}%. Review vendor master records and purchase ledger total match before approving payment authorization.`
                   : `FastAPI AI Risk Engine evaluated document ${filename}. All OCR structural fields matched approved database entries with 100% confidence. No compliance risk detected.`)
+            )}
+
+            {recommendations && (
+              <div className="rounded-xl border border-purple-100 bg-white/80 backdrop-blur-sm px-4 py-3 shadow-xs mt-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-purple-500">Recommendations</p>
+                <p className="mt-2 text-sm leading-6 text-slate-700 whitespace-pre-wrap">{recommendations}</p>
+              </div>
             )}
           </div>
 

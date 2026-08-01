@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice Risk Analysis Report</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background: #f7f7fb; margin: 0; padding: 24px; color: #1f2937;">
+    <div style="max-width: 640px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.08);">
+      <div style="background: linear-gradient(90deg, #3E0856 0%, #6D1B8C 100%); padding: 24px; color: white;">
+        <h2 style="margin: 0 0 8px; font-size: 24px;">Invoice Risk Analysis Report</h2>
+        <p style="margin: 0; font-size: 14px; opacity: 0.92;">Automated audit summary for your invoice review workflow</p>
+      </div>
+      <div style="padding: 24px;">
+        <p>Hello,</p>
+        <p>{{ message }}</p>
+
+        <!-- Invoice Details -->
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0 20px;">
+          <tr><td style="padding: 8px 0; font-weight: bold; color: #3E0856;">Invoice Number</td><td style="padding: 8px 0;">{{ invoice_number }}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold; color: #3E0856;">Vendor</td><td style="padding: 8px 0;">{{ vendor }}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold; color: #3E0856;">Vendor GSTIN</td><td style="padding: 8px 0;">{{ vendor_gstin }}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold; color: #3E0856;">Invoice Date</td><td style="padding: 8px 0;">{{ invoice_date }}</td></tr>
+          {% if place_of_supply %}
+          <tr><td style="padding: 8px 0; font-weight: bold; color: #3E0856;">Place of Supply</td><td style="padding: 8px 0;">{{ place_of_supply }}</td></tr>
+          {% endif %}
+        </table>
+
+        <!-- Amount Breakdown -->
+        <div style="background: #f8fafc; border-left: 4px solid #3E0856; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold; color: #3E0856;">Amount Breakdown</p>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 4px 0; color: #475569;">Taxable Amount</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">₹{{ "{:,.2f}".format(taxable_amount) }}</td></tr>
+            <tr><td style="padding: 4px 0; color: #475569;">Tax Amount (GST)</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">₹{{ "{:,.2f}".format(tax_amount) }}</td></tr>
+            <tr style="border-top: 2px solid #e2e8f0;"><td style="padding: 6px 0; font-weight: bold; color: #3E0856;">Total Amount</td><td style="padding: 6px 0; text-align: right; font-weight: bold; color: #3E0856; font-size: 16px;">₹{{ "{:,.2f}".format(total_amount) }}</td></tr>
+          </table>
+        </div>
+
+        <!-- Risk Assessment -->
+        <div style="background: #f8fafc; border-left: 4px solid {% if risk_level == 'High' %}#ef4444{% elif risk_level == 'Medium' %}#f59e0b{% else %}#10b981{% endif %}; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold; color: #3E0856;">Risk Assessment</p>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 4px 0; color: #475569;">Risk Score</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">{{ risk_score }}/100</td></tr>
+            <tr><td style="padding: 4px 0; color: #475569;">Risk Level</td><td style="padding: 4px 0; text-align: right; font-weight: bold; color: {% if risk_level == 'High' %}#ef4444{% elif risk_level == 'Medium' %}#f59e0b{% else %}#10b981{% endif %};">{{ risk_level }}</td></tr>
+            <tr><td style="padding: 4px 0; color: #475569;">Confidence</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">{{ confidence }}%</td></tr>
+            <tr><td style="padding: 4px 0; color: #475569;">Status</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">{{ status }}</td></tr>
+          </table>
+        </div>
+
+        <!-- Anomaly Summary -->
+        <div style="background: #f8fafc; border-left: 4px solid #6366f1; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold;">Summary of Detected Anomalies</p>
+          <p style="margin: 0; color: #475569;">{{ summary }}</p>
+        </div>
+
+        {% if risk_summary %}
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold; color: #3E0856;">Risk Summary</p>
+          <p style="margin: 0; color: #475569; white-space: pre-wrap;">{{ risk_summary }}</p>
+        </div>
+        {% endif %}
+
+        {% if gemini_analysis %}
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold; color: #3E0856;">AI Forensic Audit Analysis</p>
+          <pre style="margin: 0; color: #475569; white-space: pre-wrap; font-family: inherit; background: #f9fafb; padding: 10px; border-radius: 6px;">{{ gemini_analysis }}</pre>
+        </div>
+        {% endif %}
+
+        {% if recommendations %}
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-weight: bold; color: #3E0856;">Recommendations</p>
+          <pre style="margin: 0; color: #475569; white-space: pre-wrap; font-family: inherit; background: #f9fafb; padding: 10px; border-radius: 6px;">{{ recommendations }}</pre>
+        </div>
+        {% endif %}
+
+        <p style="margin: 0; font-size: 13px; color: #64748b;">This report was generated by the TETRA AI Risk Scanner.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -6,12 +6,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.api.router import api_router
-from app.database.mongodb import init_mongodb, close_mongodb
+from app.database.mongodb import init_mongodb, close_mongodb, seed_users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize MongoDB connection on startup
     init_mongodb()
+    # Seed default users
+    await seed_users()
     yield
     # Close MongoDB connection on shutdown
     close_mongodb()
