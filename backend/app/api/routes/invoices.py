@@ -25,25 +25,53 @@ async def list_invoices(
     if db is None:
         return {"invoices": [], "total": 0}
     try:
+        # Build audit_results lookup map for risk/status data
+        audit_cursor = db["audit_results"].find({})
+        audit_docs = await audit_cursor.to_list(length=2000)
+        audit_map = {}
+        for a in audit_docs:
+            inv_no = a.get("invoiceNumber")
+            if inv_no:
+                # Keep the latest/highest risk entry per invoice
+                existing = audit_map.get(inv_no)
+                if not existing or (a.get("riskScore") or 0) > (existing.get("riskScore") or 0):
+                    audit_map[inv_no] = a
+
         query = {}
         filters_list = []
 
         if status and status != "ALL":
+            # Status can be on invoices or audit_results
             filters_list.append({
                 "$or": [
-                    {"status": {"$regex": f"^{status}$", "$options": "i"}},
-                    {"exceptions.check": {"$regex": status, "$options": "i"}}
+                    {"status": {"$regex": status, "$options": "i"}},
                 ]
             })
 
         if risk and risk != "ALL":
-            risk_pattern = {"$regex": f"^{risk}$", "$options": "i"}
-            filters_list.append({
-                "$or": [
-                    {"riskLevel": risk_pattern},
-                    {"risk_level": risk_pattern}
-                ]
-            })
+            risk_map = {
+                "HIGH": {"$gte": 75},
+                "MEDIUM": {"$gte": 30, "$lt": 75},
+                "LOW": {"$lt": 30}
+            }
+            risk_range = risk_map.get(risk.upper())
+            if risk_range:
+                # Filter by riskScore from audit_results
+                matching_inv_nos = []
+                for inv_no, a in audit_map.items():
+                    score = a.get("riskScore") or 0
+                    if risk_range.get("$gte") is not None and score < risk_range["$gte"]:
+                        continue
+                    if risk_range.get("$lt") is not None and score >= risk_range["$lt"]:
+                        continue
+                    matching_inv_nos.append(inv_no)
+                if matching_inv_nos:
+                    filters_list.append({"$or": [
+                        {"invoiceNumber": {"$in": matching_inv_nos}},
+                        {"invoice_number": {"$in": matching_inv_nos}}
+                    ]})
+                else:
+                    filters_list.append({"invoiceNumber": {"$in": ["__NONE__"]}})
 
         if vendor:
             vendor_regex = {"$regex": vendor, "$options": "i"}
@@ -74,12 +102,50 @@ async def list_invoices(
             else:
                 query = {"$and": filters_list}
 
-        cursor = db["invoices"].find(query).sort("invoiceDate", -1).limit(limit)
-        invoices = await cursor.to_list(length=limit)
-        # Convert ObjectId to string for JSON serialization
-        for inv in invoices:
+        cursor = db["invoices"].find(query).sort("invoiceDate", -1).limit(limit * 3)
+        raw_invoices = await cursor.to_list(length=limit * 3)
+
+        # Enrich with audit_results data
+        for inv in raw_invoices:
             if "_id" in inv:
                 inv["_id"] = str(inv["_id"])
+            inv_no = inv.get("invoiceNumber") or inv.get("invoice_number") or inv.get("invoiceNo")
+            audit = audit_map.get(inv_no) or {}
+            # Prefer audit riskScore if invoice has none
+            if not inv.get("riskScore") and audit.get("riskScore") is not None:
+                inv["riskScore"] = audit["riskScore"]
+            if not inv.get("riskLevel") and audit.get("riskLevel"):
+                inv["riskLevel"] = audit["riskLevel"]
+            # Prefer audit data for status
+            if audit.get("status"):
+                inv["status"] = audit["status"]
+            # Derive status from riskLevel if still missing
+            if not inv.get("status"):
+                rl = inv.get("riskLevel") or audit.get("riskLevel") or ""
+                rs = inv.get("riskScore") or audit.get("riskScore") or 0
+                if rl in ("High", "Critical") or rs >= 75:
+                    inv["status"] = "High Risk"
+                elif rl == "Medium" or rs >= 30:
+                    inv["status"] = "Pending Review"
+                else:
+                    inv["status"] = "Passed"
+
+        # Deduplicate: keep the document with the most fields per invoiceNumber
+        seen = {}
+        for inv in raw_invoices:
+            inv_no = inv.get("invoiceNumber") or inv.get("invoice_number") or inv.get("invoiceNo")
+            if not inv_no:
+                continue
+            existing = seen.get(inv_no)
+            if not existing:
+                seen[inv_no] = inv
+            else:
+                # Keep the one with more fields (richer data)
+                if len(inv.keys()) > len(existing.keys()):
+                    seen[inv_no] = inv
+
+        invoices = list(seen.values())[:limit]
+
         return {"invoices": invoices, "total": len(invoices)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")

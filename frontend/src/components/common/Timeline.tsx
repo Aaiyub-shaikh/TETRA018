@@ -87,7 +87,7 @@ export const Timeline: React.FC<TimelineProps> = ({ events, limit }) => {
                       {/* Timestamp */}
                       <div className="text-right whitespace-nowrap text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {event.timestamp.split(' ')[1]}
+                        {event.timestamp ? (event.timestamp.split(' ')[1] || event.timestamp.split('T')[1]?.substring(0, 8) || event.timestamp) : '—'}
                       </div>
                     </div>
                   </div>

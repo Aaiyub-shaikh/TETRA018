@@ -187,27 +187,43 @@ async def get_dashboard_anomalies():
             issues = audit.get("issues") or []
             exceptions = audit.get("exceptions") or []
             
-            checks = []
+            # Normalize issues to searchable text strings
+            issue_texts = []
+            for item in issues:
+                if isinstance(item, dict):
+                    msg = item.get("message") or item.get("check") or ""
+                    issue_texts.append(msg.lower())
+                else:
+                    issue_texts.append(str(item).lower())
+
+            # Normalize exceptions to searchable text strings
+            check_texts = []
             for ex in exceptions:
                 if isinstance(ex, dict):
-                    checks.append(ex.get("check") or "")
+                    check = ex.get("check") or ex.get("message") or ""
+                    check_texts.append(check.lower())
                 else:
-                    checks.append(str(ex))
+                    check_texts.append(str(ex).lower())
+
+            all_texts = issue_texts + check_texts
 
             def has_issue(keywords):
-                return any(k.lower() in [i.lower() for i in issues] or k.lower() in [c.lower() for c in checks] for k in keywords)
+                return any(
+                    any(kw.lower() in txt for txt in all_texts)
+                    for kw in keywords
+                )
 
-            if has_issue(["Duplicate Invoice"]) or audit.get("duplicate_invoice") is True:
+            if has_issue(["Duplicate Invoice", "duplicate invoice"]):
                 counts["Duplicate Invoice"] += 1
-            if has_issue(["GST Validation", "Invalid GSTIN"]) or audit.get("gst_validation") is False:
+            if has_issue(["GST Validation", "Invalid GSTIN", "GSTIN", "gst"]):
                 counts["GST Error"] += 1
-            if has_issue(["Amount Mismatch"]):
+            if has_issue(["Amount Mismatch", "amount mismatch", "total amount"]):
                 counts["Amount Mismatch"] += 1
-            if has_issue(["Date Anomaly", "Date Mismatch"]):
+            if has_issue(["Date Anomaly", "Date Mismatch", "date mismatch", "invoice date"]):
                 counts["Date Mismatch"] += 1
-            if has_issue(["Vendor Verification", "Vendor Not Found"]):
+            if has_issue(["Vendor Verification", "Vendor Not Found", "Vendor Mismatch", "vendor account", "vendor gstin"]):
                 counts["Vendor Mismatch"] += 1
-            if has_issue(["Ledger Missing", "Missing in Purchase Ledger", "Missing Purchase Ledger Entry"]) or audit.get("ledger_match") is False:
+            if has_issue(["Ledger Missing", "Missing in Purchase Ledger", "Missing Purchase Ledger Entry", "missing in purchase ledger", "missing.*ledger"]):
                 counts["Ledger Missing"] += 1
 
         result = []
@@ -255,11 +271,11 @@ async def get_dashboard_activity(limit: int = 10):
                 ev["_id"] = str(ev["_id"])
             
             invoice_no = ev.get("invoiceNumber") or ev.get("extracted_fields", {}).get("invoice_number") or "N/A"
-            risk_level = ev.get("riskLevel") or ev.get("risk", {}).get("risk_level") or "Low"
-            score = ev.get("riskScore") or ev.get("risk", {}).get("risk_score") or 0
+            risk_level = ev.get("riskLevel") or (ev.get("risk") or {}).get("risk_level") or "Low"
+            score = ev.get("riskScore") or (ev.get("risk") or {}).get("risk_score") or 0
             
             sev = "Info"
-            if risk_level == "High" or risk_level == "Critical":
+            if risk_level in ("High", "Critical"):
                 sev = "Critical"
             elif risk_level == "Medium":
                 sev = "Warning"
@@ -269,17 +285,35 @@ async def get_dashboard_activity(limit: int = 10):
             exceptions = ev.get("exceptions") or []
             checks = [ex.get("check") for ex in exceptions if isinstance(ex, dict)] if exceptions else []
             
-            if issues or checks:
+            # Normalize issues to get readable labels
+            issue_labels = []
+            for item in issues:
+                if isinstance(item, dict):
+                    issue_labels.append(item.get("message") or item.get("field") or str(item))
+                else:
+                    issue_labels.append(str(item))
+            
+            all_labels = list(issue_labels) + list(checks)
+            if all_labels:
                 action = "Anomaly Flags Raised"
-                all_issues = list(issues) + list(checks)
-                details = f"Anomaly detected: {', '.join(all_issues)} on invoice {invoice_no}."
+                details = "Anomaly detected: %s on invoice %s." % (", ".join(all_labels), invoice_no)
             else:
-                conf = ev.get("confidence") or ev.get("risk", {}).get("confidence") or 100.0
-                details = f"OCR extraction completed. Confidence: {conf:.1f}%. Risk score: {score}%."
+                conf = ev.get("confidence") or (ev.get("risk") or {}).get("confidence") or 100.0
+                details = "OCR extraction completed. Confidence: %.1f%%. Risk score: %s%%." % (conf, score)
+
+            # Fallback timestamp: use MongoDB _id creation time if timestamp is missing
+            ts = ev.get("timestamp")
+            if not ts:
+                try:
+                    from bson import ObjectId
+                    oid = ObjectId(ev.get("_id"))
+                    ts = oid.generation_time.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    ts = ""
 
             formatted_events.append({
-                "id": ev.get("_id") or f"act-{idx}",
-                "timestamp": ev.get("timestamp") or "",
+                "id": ev.get("_id") or "act-%d" % idx,
+                "timestamp": ts,
                 "action": action,
                 "user": ev.get("user") or "AI Engine",
                 "targetType": "Invoice",

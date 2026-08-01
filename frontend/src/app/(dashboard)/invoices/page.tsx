@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Filter, ArrowUpDown, ArrowRight, Download, FileSpreadsheet, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, ArrowRight, Download, FileSpreadsheet, AlertTriangle, X, ChevronDown } from 'lucide-react';
 import { fetchInvoices, BASE_URL, type InvoiceRecord, inv_invoiceNumber, inv_vendor, inv_gstin, inv_date, inv_taxAmount, inv_totalAmount, inv_riskScore, inv_confidence, inv_uploadTime } from '@/lib/api';
 import RiskBadge from '@/components/common/RiskBadge';
 import EmptyState from '@/components/common/EmptyState';
@@ -210,9 +210,9 @@ export default function InvoicesPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-14 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
         {/* Search */}
-        <div className="relative lg:col-span-5">
+        <div className="relative lg:col-span-4">
           <Search className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-400" />
           <input
             type="text"
@@ -253,16 +253,39 @@ export default function InvoicesPage() {
           <Filter className="absolute right-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
         </div>
 
+        {/* Sort By */}
+        <div className="relative lg:col-span-2">
+          <select
+            value={`${sortBy}-${sortOrder}`}
+            onChange={(e) => {
+              const [field, order] = e.target.value.split('-');
+              setSortBy(field as 'date' | 'amount' | 'riskScore');
+              setSortOrder(order as 'desc' | 'asc');
+            }}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-xs outline-none appearance-none transition-all focus:border-[#3E0856] focus:bg-white cursor-pointer"
+          >
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="amount-desc">Highest Amount</option>
+            <option value="amount-asc">Lowest Amount</option>
+            <option value="riskScore-desc">Highest Risk</option>
+            <option value="riskScore-asc">Lowest Risk</option>
+          </select>
+          <ArrowUpDown className="absolute right-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
+
         {/* Clear Filters Button */}
         <button
           onClick={() => {
             setSearchTerm('');
             setStatusFilter('ALL');
             setRiskFilter('ALL');
+            setSortBy('date');
+            setSortOrder('desc');
           }}
-          className="lg:col-span-2 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 text-xs font-bold text-slate-500 py-2.5 transition-colors cursor-pointer"
+          className="lg:col-span-1 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 text-xs font-bold text-slate-500 py-2.5 transition-colors cursor-pointer"
         >
-          Reset Filters
+          Reset
         </button>
       </div>
 
