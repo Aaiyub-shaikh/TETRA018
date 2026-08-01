@@ -48,7 +48,7 @@ export default function InvoicesPage() {
         setInvoices(res.invoices || []);
         setError(null);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Failed to fetch invoices');
       })
       .finally(() => {
@@ -234,8 +234,11 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
-                {filteredInvoices.map((inv) => (
-                  <tr key={inv.invoice_number} className="group hover:bg-slate-50/50 transition-colors">
+                {filteredInvoices.map((inv, index) => (
+                  <tr
+                    key={`${inv.invoice_number ?? 'unknown'}-${inv.filename ?? 'no-file'}-${index}`}
+                    className="group hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="py-3.5 pl-2">
                       <Link
                         href={`/invoices/${inv.invoice_number}`}
@@ -283,7 +286,7 @@ export default function InvoicesPage() {
                     </td>
                     <td className="py-3.5 pr-2 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <RiskBadge status={inv.status as any} showIcon={false} />
+                        <RiskBadge status={inv.status} showIcon={false} />
                         <Link
                           href={`/invoices/${inv.invoice_number}`}
                           className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#3E0856] rounded hover:bg-slate-100 transition-all duration-200"

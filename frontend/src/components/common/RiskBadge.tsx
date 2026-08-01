@@ -3,8 +3,24 @@ import { ShieldCheck, AlertOctagon, RefreshCw, Copy, Percent, AlertTriangle } fr
 
 export type RiskStatus = 'Verified' | 'High Risk' | 'Pending Review' | 'Duplicate' | 'GST Mismatch' | 'Ledger Missing';
 
+const VALID_RISK_STATUSES: RiskStatus[] = [
+  'Verified',
+  'High Risk',
+  'Pending Review',
+  'Duplicate',
+  'GST Mismatch',
+  'Ledger Missing',
+];
+
+export function normalizeRiskStatus(status?: string | null): RiskStatus {
+  if (status && VALID_RISK_STATUSES.includes(status as RiskStatus)) {
+    return status as RiskStatus;
+  }
+  return 'Pending Review';
+}
+
 interface RiskBadgeProps {
-  status: RiskStatus;
+  status?: string | null;
   showIcon?: boolean;
   className?: string;
 }
@@ -43,10 +59,11 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ status, showIcon = true, c
     },
   };
 
-  const current = config[status] || {
+  const normalizedStatus = normalizeRiskStatus(status);
+  const current = config[normalizedStatus] || {
     bg: 'bg-slate-50 text-slate-700 border-slate-200',
     icon: AlertTriangle,
-    label: status,
+    label: normalizedStatus,
   };
 
   const IconComponent = current.icon;

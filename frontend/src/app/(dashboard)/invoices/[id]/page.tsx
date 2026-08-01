@@ -19,12 +19,29 @@ import Loader from '@/components/common/Loader';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
+type InvoiceDetail = {
+  invoice_number?: string;
+  filename?: string;
+  status?: string;
+  risk_score?: number;
+  confidence?: number;
+  taxable_amount?: number;
+  tax_amount?: number;
+  total_amount?: number;
+  total?: number;
+  exceptions?: Array<{ check: string; severity: 'Low' | 'Medium' | 'High'; detail: string }>;
+  vendor?: string;
+  vendor_gstin?: string;
+  invoice_date?: string;
+  upload_time?: string;
+};
+
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
 
-  const [invoice, setInvoice] = useState<any>(null);
+  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,7 +132,7 @@ export default function InvoiceDetailPage() {
               <h2 className="text-xl font-bold text-slate-800 tracking-tight">
                 {invoice.invoice_number}
               </h2>
-              <RiskBadge status={currentStatus as any} />
+              <RiskBadge status={currentStatus} />
             </div>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">
               OCR Session File: {invoice.filename}
@@ -263,7 +280,7 @@ export default function InvoiceDetailPage() {
                 </span>
 
                 <div className="space-y-2">
-                  {exceptions.map((flag: any, idx: number) => (
+                  {exceptions.map((flag, idx: number) => (
                     <div key={idx} className="flex justify-between items-center text-xs">
                       <span className="font-semibold text-slate-600">{flag.check}</span>
                       <span className="text-slate-500 font-medium text-right max-w-xs">{flag.detail}</span>

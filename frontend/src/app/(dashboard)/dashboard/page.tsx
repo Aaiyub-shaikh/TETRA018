@@ -6,14 +6,15 @@ import RiskChart from '@/components/charts/RiskChart';
 import VendorChart from '@/components/charts/VendorChart';
 import Timeline from '@/components/common/Timeline';
 import RiskBadge from '@/components/common/RiskBadge';
-import { FileText, ArrowRight, ShieldAlert, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { FileText, ArrowRight, ShieldAlert, Sparkles, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { fetchInvoices, fetchAuditTrail, type InvoiceRecord, type AuditEvent } from '@/lib/api';
 import Loader from '@/components/common/Loader';
+import type { TimelineEvent } from '@/components/common/Timeline';
 
 export default function DashboardPage() {
   const [flaggedInvoices, setFlaggedInvoices] = useState<InvoiceRecord[]>([]);
-  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [flaggedCount, setFlaggedCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,8 +33,8 @@ export default function DashboardPage() {
 
         // Load audit logs and map them to Timeline format
         const auditRes = await fetchAuditTrail(5);
-        const events = (auditRes.events || []).map((log: any, idx: number) => {
-          const invoiceNo = log.extracted_fields?.invoice_number || 'Unknown';
+        const events = (auditRes.events || []).map((log: AuditEvent, idx: number) => {
+          const invoiceNo = (log as { extracted_fields?: { invoice_number?: string } }).extracted_fields?.invoice_number || 'Unknown';
           const riskLevel = log.risk?.risk_level || 'Low';
           const score = log.risk?.risk_score || 0;
 
@@ -45,7 +46,7 @@ export default function DashboardPage() {
           let details = `OCR extraction completed for ${log.filename}. Confidence: ${(log.risk?.confidence || 100).toFixed(1)}%. Risk score: ${score}%.`;
           if (log.exceptions && log.exceptions.length > 0) {
             action = 'Anomaly Flags Raised';
-            details = `Anomaly detected: ${log.exceptions.map((f: any) => f.check).join(', ')} on invoice ${invoiceNo}.`;
+            details = `Anomaly detected: ${log.exceptions.map((f) => f.check).join(', ')} on invoice ${invoiceNo}.`;
           }
 
           let formattedTime = '';
@@ -213,8 +214,11 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    flaggedInvoices.map((inv) => (
-                      <tr key={inv.invoice_number} className="group hover:bg-slate-50/50 transition-colors">
+                    flaggedInvoices.map((inv, index) => (
+                      <tr
+                        key={`${inv.invoice_number ?? 'unknown'}-${inv.filename ?? 'no-file'}-${index}`}
+                        className="group hover:bg-slate-50/50 transition-colors"
+                      >
                         <td className="py-3.5 pl-2">
                           <Link
                             href={`/invoices/${inv.invoice_number}`}
@@ -255,7 +259,7 @@ export default function DashboardPage() {
                           })()}
                         </td>
                         <td className="py-3.5 pr-2 text-right">
-                          <RiskBadge status={inv.status as any} showIcon={false} />
+                          <RiskBadge status={inv.status} showIcon={false} />
                         </td>
                       </tr>
                     ))

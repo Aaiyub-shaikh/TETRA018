@@ -75,8 +75,8 @@ function AddLedgerModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClo
       setAmount('');
       setTaxAmount('');
       setStatus('Reconciled');
-    } catch (err: any) {
-      setError(err.message || 'Failed to add ledger entry');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add ledger entry');
     } finally {
       setSubmitting(false);
     }

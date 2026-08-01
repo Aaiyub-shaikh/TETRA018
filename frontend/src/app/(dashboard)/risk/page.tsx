@@ -212,7 +212,7 @@ export default function RiskPage() {
                           </div>
                         </td>
                         <td className="py-4">
-                          <RiskBadge status={inv.status as any} showIcon={false} />
+                          <RiskBadge status={inv.status} showIcon={false} />
                         </td>
                         <td className="py-4 text-center">
                           {(() => {
@@ -274,7 +274,7 @@ export default function RiskPage() {
                                       Compliance Mismatches Identified
                                     </span>
                                     <div className="space-y-1.5">
-                                      {exceptions.map((flag: any, idx: number) => (
+                                      {exceptions.map((flag, idx: number) => (
                                         <div
                                           key={idx}
                                           className="flex items-center justify-between text-xs font-semibold"

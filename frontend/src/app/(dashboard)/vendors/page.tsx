@@ -73,8 +73,8 @@ function AddVendorModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClo
       setPhone('');
       setAddress('');
       setStatus('Active');
-    } catch (err: any) {
-      setError(err.message || 'Failed to add vendor');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add vendor');
     } finally {
       setSubmitting(false);
     }

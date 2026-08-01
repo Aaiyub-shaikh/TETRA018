@@ -1,17 +1,73 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Timeline from '@/components/common/Timeline';
-import { mockAuditTrail, AuditEvent } from '@/constants/mockData';
+import { fetchAuditTrail, type AuditEvent } from '@/lib/api';
 import { History, Search, Filter, Download, FileCheck } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 
+type TimelineEntry = {
+  id: string;
+  action: string;
+  details: string;
+  user: string;
+  timestamp: string;
+  severity: 'Info' | 'Warning' | 'Critical';
+  targetType: string;
+  targetId: string;
+};
+
 export default function AuditPage() {
+  const [events, setEvents] = useState<TimelineEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAudit = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchAuditTrail(50);
+        const mapped = (res.events || []).map((event: AuditEvent, index: number) => {
+          const riskInfo = event.risk;
+          const riskLevel = riskInfo?.risk_level ?? 'Low';
+          const riskScore = riskInfo?.risk_score ?? 0;
+          const exceptions = event.exceptions ?? [];
+
+          const action = exceptions.length > 0 ? 'Anomaly Flags Raised' : 'Invoice Processed';
+          const details = exceptions.length > 0
+            ? `Anomalies detected: ${exceptions.map((item) => item.check).join(', ')}`
+            : `Invoice analysis completed. Risk score: ${riskScore}. Confidence: ${(riskInfo?.confidence ?? 0).toFixed(1)}%`;
+
+          const severity: 'Info' | 'Warning' | 'Critical' =
+            riskLevel === 'High' ? 'Critical' : riskLevel === 'Medium' ? 'Warning' : 'Info';
+
+          return {
+            id: `${event.timestamp ?? index}-${index}`,
+            action,
+            details,
+            user: 'AI Engine',
+            timestamp: event.timestamp ?? new Date().toISOString(),
+            severity,
+            targetType: 'Invoice',
+            targetId: event.filename ?? `invoice-${index}`,
+          } satisfies TimelineEntry;
+        });
+
+        setEvents(mapped);
+      } catch (error) {
+        console.error('Failed to fetch audit trail:', error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAudit();
+  }, []);
 
   const filteredEvents = useMemo(() => {
-    return mockAuditTrail.filter((event: AuditEvent) => {
+    return events.filter((event) => {
       const matchesSearch =
         event.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -21,7 +77,7 @@ export default function AuditPage() {
 
       return matchesSearch && matchesSeverity;
     });
-  }, [searchTerm, severityFilter]);
+  }, [events, searchTerm, severityFilter]);
 
   const handleExport = () => {
     alert('Cryptographic audit trail ledger downloaded successfully. SHA-256 Hash verified.');
@@ -29,7 +85,6 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header Info */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
@@ -50,9 +105,7 @@ export default function AuditPage() {
         </button>
       </div>
 
-      {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
-        {/* Search */}
         <div className="relative lg:col-span-7">
           <Search className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-400" />
           <input
@@ -64,7 +117,6 @@ export default function AuditPage() {
           />
         </div>
 
-        {/* Severity Filter */}
         <div className="relative lg:col-span-3">
           <select
             value={severityFilter}
@@ -79,7 +131,6 @@ export default function AuditPage() {
           <Filter className="absolute right-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
         </div>
 
-        {/* Reset */}
         <button
           onClick={() => {
             setSearchTerm('');
@@ -91,15 +142,15 @@ export default function AuditPage() {
         </button>
       </div>
 
-      {/* Audit Log Card */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-        {/* Security badge overview */}
         <div className="mb-8 flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-100/60 p-4 text-xs text-emerald-700 font-semibold">
           <FileCheck className="h-4.5 w-4.5" />
           <span>Security Ledger Active: Log hashes are locked and backed up to SOC2 compliance storage.</span>
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {loading ? (
+          <div className="py-8 text-center text-xs text-slate-500">Loading audit trail from backend…</div>
+        ) : filteredEvents.length === 0 ? (
           <EmptyState
             title="No audit events found"
             description="Adjust your search filters or verify the compliance dashboard."

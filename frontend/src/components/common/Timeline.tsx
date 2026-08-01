@@ -1,17 +1,27 @@
 import React from 'react';
-import { AuditEvent } from '@/constants/mockData';
 import { Info, AlertTriangle, AlertCircle, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
+export type TimelineEvent = {
+  id: string;
+  action: string;
+  details: string;
+  user: string;
+  timestamp: string;
+  severity: 'Info' | 'Warning' | 'Critical';
+  targetType?: string;
+  targetId?: string;
+};
+
 interface TimelineProps {
-  events: AuditEvent[];
+  events: TimelineEvent[];
   limit?: number;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({ events, limit }) => {
   const displayedEvents = limit ? events.slice(0, limit) : events;
 
-  const getSeverityStyles = (severity: AuditEvent['severity']) => {
+  const getSeverityStyles = (severity: TimelineEvent['severity']) => {
     switch (severity) {
       case 'Critical':
         return {
