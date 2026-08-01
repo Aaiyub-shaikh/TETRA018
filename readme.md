@@ -318,3 +318,1063 @@ The platform acts as an AI Audit Assistant rather than a simple OCR application.
 
 ---
 
+# 🚀 Full Stack Platform Features
+
+Tetra018 is divided into multiple intelligent modules that work together to automate the complete financial auditing workflow.
+
+---
+
+# 📄 Smart Invoice Upload
+
+Supports
+
+- PDF Invoices
+- Image Invoices
+- Scanned Documents
+- Mobile Camera Images
+- Excel Upload
+- Batch Upload
+
+Automatic preprocessing includes
+
+- Noise Removal
+- Image Enhancement
+- Rotation Correction
+- Perspective Correction
+- OCR Optimization
+
+---
+
+# 🔍 Intelligent OCR Engine
+
+Powered by PaddleOCR.
+
+The OCR engine extracts structured financial information from unstructured invoices.
+
+Automatically extracts:
+
+• Invoice Number
+
+• Invoice Date
+
+• Due Date
+
+• Vendor Name
+
+• Vendor Address
+
+• Vendor GSTIN
+
+• Customer GSTIN
+
+• Purchase Order
+
+• Invoice Items
+
+• HSN/SAC Codes
+
+• Taxable Amount
+
+• CGST
+
+• SGST
+
+• IGST
+
+• Total Tax
+
+• Grand Total
+
+• Payment Terms
+
+• Bank Details
+
+---
+
+# 📊 AI Extraction Engine
+
+After OCR, extracted text is converted into structured business entities.
+
+Modules include
+
+- Invoice Parser
+- Vendor Extractor
+- GST Extractor
+- Amount Extractor
+- Date Extractor
+- Tax Extractor
+- Field Standardization
+- Confidence Scoring
+
+---
+
+# ✅ Financial Validation Engine
+
+The validation engine performs multiple accounting checks.
+
+Checks include
+
+✔ GST Validation
+
+✔ Tax Verification
+
+✔ Invoice Arithmetic
+
+✔ Vendor Verification
+
+✔ Purchase Ledger Matching
+
+✔ Duplicate Invoice Detection
+
+✔ Date Validation
+
+✔ Missing Fields
+
+✔ Invalid GST Format
+
+✔ Invoice Number Verification
+
+✔ Ledger Consistency
+
+✔ Vendor Master Matching
+
+---
+
+# 🤖 AI Reasoning Engine
+
+Unlike traditional validation systems that only report errors, Tetra018 explains every inconsistency using AI.
+
+Example
+
+Issue
+
+GST Amount Mismatch
+
+AI Explanation
+
+Expected GST at 18% for a taxable amount of ₹12,500 is ₹2,250.
+
+The uploaded invoice contains ₹2,640.
+
+Difference detected:
+
+₹390
+
+Possible Reasons
+
+• Incorrect GST calculation
+
+• Manual modification
+
+• Wrong tax slab
+
+• Data entry error
+
+Recommended Action
+
+Verify invoice with vendor before processing payment.
+
+---
+
+# 📈 AI Risk Scoring
+
+Every invoice receives an intelligent risk assessment.
+
+Risk Categories
+
+🟢 Low Risk
+
+🟡 Medium Risk
+
+🟠 High Risk
+
+🔴 Critical Risk
+
+Risk Score considers
+
+- Duplicate Probability
+- Vendor History
+- GST Errors
+- Ledger Mismatch
+- Tax Difference
+- Invoice Completeness
+- AI Confidence
+- Historical Behaviour
+
+---
+
+# 💬 AI Invoice Chatbot
+
+Every invoice has its own conversational assistant.
+
+Users can ask questions such as
+
+```
+
+Why is this invoice risky?
+
+Explain the GST mismatch.
+
+Summarize this invoice.
+
+Who is the vendor?
+
+Is this invoice duplicated?
+
+Show all detected issues.
+
+What should the auditor verify?
+
+Generate audit notes.
+
+Explain the tax calculation.
+
+```
+
+The chatbot understands the complete invoice context and answers follow-up questions using the extracted invoice data and AI reasoning engine.
+
+---
+
+# 📑 Report Generation
+
+Generate professional reports including
+
+- Audit Report
+- Invoice Summary
+- Validation Report
+- Exception Report
+- AI Summary
+- Vendor Analysis
+- Ledger Comparison
+
+Export formats
+
+- PDF
+- CSV
+- Excel
+
+---
+
+# 📧 Email Invoice Reports
+
+Send individual invoice audit reports directly via email with the generated PDF attachment and AI-generated summary.
+
+---
+
+# 📝 Audit Trail Management
+
+The audit module maintains complete financial history.
+
+Features
+
+- Upload Vendor Master
+- Upload Purchase Ledger
+- Edit Vendor Records
+- Edit Ledger Records
+- Import Excel Files
+- Import PDF Documents
+- Change Tracking
+- Audit Logs
+- Historical Modifications
+
+---
+
+# 📊 Interactive Dashboard
+
+The analytics dashboard provides real-time business insights.
+
+Widgets include
+
+- Total Invoices
+- Processed Today
+- High Risk Invoices
+- Duplicate Detection
+- Vendor Statistics
+- Monthly Trends
+- GST Distribution
+- Invoice Processing Status
+- AI Risk Distribution
+- Audit Progress
+
+---
+
+# 🔐 Security
+
+Security Features
+
+- JWT Authentication
+- Password Hashing
+- Protected APIs
+- Role-Based Access
+- Secure File Upload
+- Input Validation
+- Environment Variables
+- CORS Protection
+- Error Handling Middleware
+
+---
+
+# ⚙ Technology Stack
+
+## Frontend
+
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- ShadCN UI
+- React Hook Form
+- Axios
+- Context API
+
+## Backend
+
+- FastAPI
+- Python
+- Pydantic
+- Uvicorn
+- JWT
+- MongoDB
+
+## AI
+
+- PaddleOCR
+- OpenRouter / LLM
+- AI Reasoning Engine
+- Invoice Chatbot
+
+## Reports
+
+- PDF Generator
+- Excel Export
+- CSV Export
+
+## DevOps
+
+- Docker
+- Docker Compose
+- GitHub
+- Environment Configuration
+
+# 💻 Local Development Setup
+
+Tetra018 is built as a modern full-stack application consisting of a **Next.js frontend** and a **FastAPI backend**. Follow the steps below to run the application locally.
+
+---
+
+# 📋 Prerequisites
+
+Before running the project, ensure the following software is installed.
+
+| Software | Version |
+|-----------|----------|
+| Python | 3.11+ |
+| Node.js | 20+ |
+| npm | Latest |
+| Git | Latest |
+| MongoDB | 7+ |
+| Docker *(Optional)* | Latest |
+
+---
+
+# 📥 Clone Repository
+
+```bash
+git clone https://github.com/Aaiyub-shaikh/Tetra018.git
+
+cd Tetra018
+```
+
+---
+
+# ⚙ Backend Setup
+
+Navigate to backend
+
+```bash
+cd backend
+```
+
+Create virtual environment
+
+```bash
+python -m venv .venv
+```
+
+Activate
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Start FastAPI
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Backend runs at
+
+```
+http://localhost:8000
+```
+
+---
+
+# 🌐 Frontend Setup
+
+Navigate to frontend
+
+```bash
+cd frontend
+```
+
+Install packages
+
+```bash
+npm install
+```
+
+Run Next.js
+
+```bash
+npm run dev
+```
+
+Frontend runs at
+
+```
+http://localhost:3000
+```
+
+---
+
+# 🐳 Docker Setup
+
+Build containers
+
+```bash
+docker compose build
+```
+
+Run
+
+```bash
+docker compose up
+```
+
+Stop
+
+```bash
+docker compose down
+```
+
+---
+
+# 🔐 Environment Variables
+
+Create
+
+```
+backend/.env
+```
+
+Example
+
+```env
+APP_NAME=Tetra018
+
+SECRET_KEY=your_secret_key
+
+JWT_ALGORITHM=HS256
+
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+MONGODB_URI=mongodb:+srv//atlas-server/tetra018
+
+DATABASE_NAME=tetra018
+
+UPLOAD_FOLDER=uploads
+
+REPORT_FOLDER=reports
+
+OPENROUTER_API_KEY=
+
+GEMINI_API_KEY=
+
+EMAIL_USERNAME=
+
+EMAIL_PASSWORD=
+
+SMTP_SERVER=smtp.gmail.com
+
+SMTP_PORT=587
+```
+
+Never commit the real `.env` file.
+
+---
+
+Tetra018
+│
+├── backend/
+│   │
+│   ├── app/
+│   │   │
+│   │   ├── api/
+│   │   │   ├── routes/
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── upload.py
+│   │   │   │   ├── invoices.py
+│   │   │   │   ├── vendors.py
+│   │   │   │   ├── dashboard.py
+│   │   │   │   ├── reports.py
+│   │   │   │   ├── audit.py
+│   │   │   │   └── health.py
+│   │   │   └── router.py
+│   │   │
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   ├── database.py
+│   │   │   ├── security.py
+│   │   │   ├── logging.py
+│   │   │   └── constants.py
+│   │   │
+│   │   ├── models/
+│   │   │   ├── invoice.py
+│   │   │   ├── vendor.py
+│   │   │   ├── ledger.py
+│   │   │   ├── report.py
+│   │   │   └── user.py
+│   │   │
+│   │   ├── schemas/
+│   │   │   ├── invoice.py
+│   │   │   ├── vendor.py
+│   │   │   ├── report.py
+│   │   │   ├── auth.py
+│   │   │   └── dashboard.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── ocr/
+│   │   │   │   ├── paddle_ocr.py
+│   │   │   │   ├── image_preprocessing.py
+│   │   │   │   └── text_cleaner.py
+│   │   │   │
+│   │   │   ├── parser/
+│   │   │   │   ├── pdf_parser.py
+│   │   │   │   ├── image_parser.py
+│   │   │   │   └── invoice_parser.py
+│   │   │   │
+│   │   │   ├── extractor/
+│   │   │   │   ├── field_extractor.py
+│   │   │   │   ├── gst_extractor.py
+│   │   │   │   ├── vendor_extractor.py
+│   │   │   │   └── amount_extractor.py
+│   │   │   │
+│   │   │   ├── validation/
+│   │   │   │   ├── gst_validator.py
+│   │   │   │   ├── duplicate_checker.py
+│   │   │   │   ├── amount_checker.py
+│   │   │   │   ├── date_checker.py
+│   │   │   │   ├── vendor_checker.py
+│   │   │   │   └── ledger_checker.py
+│   │   │   │
+│   │   │   ├── risk/
+│   │   │   │   ├── risk_engine.py
+│   │   │   │   ├── scoring.py
+│   │   │   │   └── anomaly_detector.py
+│   │   │   │
+│   │   │   ├── ai/
+│   │   │   │   ├── llm_service.py
+│   │   │   │   ├── prompts.py
+│   │   │   │   ├── explanation_generator.py
+│   │   │   │   ├── report_summary.py
+│   │   │   │   └── followup_questions.py
+│   │   │   │
+│   │   │   ├── reports/
+│   │   │   │   ├── pdf_generator.py
+│   │   │   │   ├── csv_export.py
+│   │   │   │   └── excel_export.py
+│   │   │   │
+│   │   │   ├── email/
+│   │   │   │   ├── email_service.py
+│   │   │   │   ├── templates.py
+│   │   │   │   └── attachments.py
+│   │   │   │
+│   │   │   └── dashboard/
+│   │   │       ├── analytics.py
+│   │   │       ├── statistics.py
+│   │   │       └── charts.py
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── invoice_repository.py
+│   │   │   ├── vendor_repository.py
+│   │   │   ├── ledger_repository.py
+│   │   │   └── report_repository.py
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── helpers.py
+│   │   │   ├── file_utils.py
+│   │   │   ├── regex_patterns.py
+│   │   │   ├── fuzzy_match.py
+│   │   │   ├── gst_utils.py
+│   │   │   └── logger.py
+│   │   │
+│   │   ├── middleware/
+│   │   │   ├── auth.py
+│   │   │   ├── cors.py
+│   │   │   └── error_handler.py
+│   │   │
+│   │   ├── dependencies/
+│   │   │   ├── auth.py
+│   │   │   └── database.py
+│   │   │
+│   │   ├── main.py
+│   │   └── __init__.py
+│   │
+│   ├── uploads/
+│   │   ├── invoices/
+│   │   ├── processed/
+│   │   └── temp/
+│   │
+│   ├── reports/
+│   │   ├── pdf/
+│   │   ├── csv/
+│   │   └── excel/
+│   │
+│   ├── dataset/
+│   │   ├── invoices/
+│   │   ├── purchase_ledger.csv
+│   │   ├── vendor_master.csv
+│   │   └── expected_exceptions.csv
+│   │
+│   ├── tests/
+│   │   ├── test_api.py
+│   │   ├── test_ocr.py
+│   │   ├── test_validation.py
+│   │   └── test_risk.py
+│   │
+│   ├── requirements.txt
+│   ├── .env
+│   ├── .env.example
+│   ├── alembic.ini
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── .gitignore
+│
+├── frontend/
+│   │
+│   ├── public/
+│   │
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (dashboard)/
+│   │   │   ├── login/
+│   │   │   ├── upload/
+│   │   │   ├── invoices/
+│   │   │   ├── vendors/
+│   │   │   ├── reports/
+│   │   │   ├── settings/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── globals.css
+│   │   │   └── favicon.ico
+│   │   │
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   ├── dashboard/
+│   │   │   ├── charts/
+│   │   │   ├── invoice/
+│   │   │   ├── upload/
+│   │   │   ├── vendors/
+│   │   │   ├── tables/
+│   │   │   ├── layout/
+│   │   │   ├── forms/
+│   │   │   └── ui/
+│   │   │
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── services/
+│   │   ├── context/
+│   │   ├── utils/
+│   │   ├── types/
+│   │   ├── constants/
+│   │   ├── assets/
+│   │   │   ├── images/
+│   │   │   ├── icons/
+│   │   │   └── logos/
+│   │   └── styles/
+│   │
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── next.config.ts
+│   ├── tailwind.config.ts
+│   └── components.json
+│
+├── README.md
+└── LICENSE
+# 📡 REST API Endpoints
+
+Authentication
+
+```
+POST   /api/auth/login
+
+POST   /api/auth/register
+
+POST   /api/auth/logout
+```
+
+Invoices
+
+```
+POST   /api/upload
+
+GET    /api/invoices
+
+GET    /api/invoices/{id}
+
+DELETE /api/invoices/{id}
+```
+
+Vendor
+
+```
+GET
+
+POST
+
+PUT
+
+DELETE
+```
+
+Reports
+
+```
+Generate PDF
+
+Generate CSV
+
+Generate Excel
+
+Download Reports
+```
+
+Dashboard
+
+```
+Analytics
+
+Charts
+
+Statistics
+
+Risk Summary
+```
+
+Audit
+
+```
+Ledger Upload
+
+Vendor Upload
+
+Audit Trail
+
+Risk Analysis
+```
+
+---
+
+# 🔄 Technical Workflow
+
+```
+User
+
+↓
+
+Upload Invoice
+
+↓
+
+OCR Processing
+
+↓
+
+Field Extraction
+
+↓
+
+Validation Engine
+
+↓
+
+Risk Engine
+
+↓
+
+AI Reasoning
+
+↓
+
+Invoice Chatbot
+
+↓
+
+Report Generation
+
+↓
+
+Dashboard Analytics
+```
+
+---
+
+# ⚡ Performance Optimizations
+
+✔ Image Preprocessing
+
+✔ OCR Confidence Filtering
+
+✔ Fuzzy Vendor Matching
+
+✔ Regex Optimization
+
+✔ AI Prompt Engineering
+
+✔ Modular Service Architecture
+
+✔ Repository Pattern
+
+✔ Dependency Injection
+
+✔ Lazy Component Loading
+
+✔ API Separation
+
+---
+# 🛡 Security Features
+
+- JWT Authentication
+- Password Hashing
+- Secure File Upload
+- Protected APIs
+- Role Based Access Control
+- Input Validation
+- Secure Environment Variables
+- Error Handling Middleware
+- Request Validation
+- CORS Protection
+
+---
+
+# 🧪 Testing
+
+Run backend tests
+
+```bash
+pytest
+```
+
+Run specific tests
+
+```bash
+pytest tests/test_ocr.py
+
+pytest tests/test_validation.py
+
+pytest tests/test_risk.py
+
+pytest tests/test_api.py
+```
+
+---
+
+# 📊 Future Roadmap
+
+## AI
+
+- AI Fraud Detection
+
+- Invoice Similarity Search
+
+- Multi-Agent Audit Assistant
+
+- Financial Forecasting
+
+- Automatic Ledger Suggestions
+
+- Vendor Risk Prediction
+
+---
+
+## OCR
+
+- Handwritten Invoice Recognition
+
+- Multi-language OCR
+
+- Barcode Recognition
+
+- QR Code Parsing
+
+---
+
+## Reports
+
+- Interactive BI Dashboard
+
+- Scheduled Reports
+
+- Email Automation
+
+- Audit Timeline
+
+---
+
+## Enterprise
+
+- SAP Integration
+
+- Tally Integration
+
+- Zoho Books Integration
+
+- QuickBooks Integration
+
+- GST Portal Verification
+
+- ERP Integration
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome.
+
+Steps
+
+```bash
+Fork Repository
+
+Create Feature Branch
+
+Commit Changes
+
+Push Branch
+
+Open Pull Request
+```
+
+---
+
+# 👨‍💻 Team
+
+## Tetra018
+
+AI-Powered Financial Consistency & Intelligent Invoice Audit Platform
+
+### Core Modules
+
+- OCR Pipeline
+- AI Extraction Engine
+- Validation Engine
+- AI Reasoning
+- Invoice Chatbot
+- Dashboard
+- Audit Trail
+- Reports
+- Authentication
+
+---
+
+# 🏆 Hackathon Compliance
+
+✔ End-to-End Working Application
+
+✔ AI Powered
+
+✔ OCR Based
+
+✔ Explainable AI
+
+✔ Modern UI
+
+✔ REST APIs
+
+✔ Docker Support
+
+✔ Modular Architecture
+
+✔ Production Ready Codebase
+
+✔ Enterprise Folder Structure
+
+---
+
+# 📜 License
+
+This project is licensed under the MIT License.
+
+```
+MIT License
+
+Copyright (c) 2026 Tetra018
+
+Permission is hereby granted, free of charge,
+to any person obtaining a copy of this software...
+```
+
+---
+
+# ❤️ Acknowledgements
+
+Special thanks to
+
+- PaddleOCR
+- FastAPI
+- Next.js
+- React
+- MongoDB
+- OpenRouter
+- Tailwind CSS
+- Python Community
+
+---
+
+# ⭐ Support
+
+If you found this project useful,
+
+⭐ Star this repository
+
+🍴 Fork the repository
+
+🐛 Report issues
+
+💡 Suggest improvements
+
+---
+
+<p align="center">
+
+Made with ❤️ by Team Tetra018
+
+Built for **TetraThon Hackathon 2026**
+
+</p>
