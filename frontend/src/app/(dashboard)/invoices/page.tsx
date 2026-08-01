@@ -1,49 +1,106 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Filter, ArrowUpDown, ArrowRight, Download, FileSpreadsheet } from 'lucide-react';
-import { mockInvoices, Invoice } from '@/constants/mockData';
+import { Search, Filter, ArrowUpDown, ArrowRight, Download, FileSpreadsheet, AlertTriangle, X } from 'lucide-react';
+import { fetchInvoices, type InvoiceRecord } from '@/lib/api';
 import RiskBadge from '@/components/common/RiskBadge';
 import EmptyState from '@/components/common/EmptyState';
+import Loader from '@/components/common/Loader';
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3 rounded-2xl border border-rose-200 bg-white px-4 py-3.5 shadow-xl max-w-sm">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+        <AlertTriangle className="h-4 w-4" />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-bold text-slate-800">Fetch Failed</span>
+        <span className="text-[11px] text-slate-500 leading-relaxed">{message}</span>
+      </div>
+      <button
+        onClick={onClose}
+        className="ml-auto shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'riskScore'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  const loadInvoices = () => {
+    setLoading(true);
+    fetchInvoices()
+      .then((res) => {
+        setInvoices(res.invoices || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to fetch invoices');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadInvoices();
+  }, []);
 
   // Filter and Sort logic
   const filteredInvoices = useMemo(() => {
-    return mockInvoices
-      .filter((inv: Invoice) => {
+    return invoices
+      .filter((inv) => {
+        const invNo = inv.invoice_number || '';
+        const vendor = inv.vendor || '';
+        const gstin = inv.vendor_gstin || '';
+
         const matchesSearch =
-          inv.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          inv.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          inv.vendorGstin.toLowerCase().includes(searchTerm.toLowerCase());
+          invNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          gstin.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = statusFilter === 'ALL' || inv.status === statusFilter;
-        
+
         let matchesRisk = true;
-        if (riskFilter === 'HIGH') matchesRisk = inv.riskScore >= 75;
-        else if (riskFilter === 'MEDIUM') matchesRisk = inv.riskScore >= 30 && inv.riskScore < 75;
-        else if (riskFilter === 'LOW') matchesRisk = inv.riskScore < 30;
+        const score = inv.risk_score != null ? inv.risk_score : (inv.risk_level === 'High' ? 85 : inv.risk_level === 'Medium' ? 45 : 10);
+        if (riskFilter === 'HIGH') matchesRisk = score >= 75;
+        else if (riskFilter === 'MEDIUM') matchesRisk = score >= 30 && score < 75;
+        else if (riskFilter === 'LOW') matchesRisk = score < 30;
 
         return matchesSearch && matchesStatus && matchesRisk;
       })
-      .sort((a: Invoice, b: Invoice) => {
+      .sort((a, b) => {
         let comparison = 0;
         if (sortBy === 'date') {
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          const dateA = a.invoice_date || a.upload_time || '';
+          const dateB = b.invoice_date || b.upload_time || '';
+          comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
         } else if (sortBy === 'amount') {
-          comparison = a.amount - b.amount;
+          const valA = a.total_amount != null ? a.total_amount : (a.total != null ? a.total : 0);
+          const valB = b.total_amount != null ? b.total_amount : (b.total != null ? b.total : 0);
+          comparison = valA - valB;
         } else if (sortBy === 'riskScore') {
-          comparison = a.riskScore - b.riskScore;
+          const scoreA = a.risk_score != null ? a.risk_score : (a.risk_level === 'High' ? 85 : a.risk_level === 'Medium' ? 45 : 10);
+          const scoreB = b.risk_score != null ? b.risk_score : (b.risk_level === 'High' ? 85 : b.risk_level === 'Medium' ? 45 : 10);
+          comparison = scoreA - scoreB;
         }
         return sortOrder === 'asc' ? comparison : -comparison;
       });
-  }, [searchTerm, statusFilter, riskFilter, sortBy, sortOrder]);
+  }, [invoices, searchTerm, statusFilter, riskFilter, sortBy, sortOrder]);
 
   const handleSort = (field: 'date' | 'amount' | 'riskScore') => {
     if (sortBy === field) {
@@ -58,6 +115,8 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-8">
+      {error && <Toast message={error} onClose={() => setError(null)} />}
+
       {/* Header action panel */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -137,8 +196,10 @@ export default function InvoicesPage() {
       </div>
 
       {/* Main Table card */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-        {filteredInvoices.length === 0 ? (
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm min-h-[200px] flex flex-col justify-center">
+        {loading ? (
+          <Loader size="md" label="Loading telemetry directory..." />
+        ) : filteredInvoices.length === 0 ? (
           <EmptyState
             title="No invoices found matching criteria"
             description="Adjust your search tags, verify the filters, or ingest new bills to run scans."
@@ -173,58 +234,58 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
-                {filteredInvoices.map((inv: Invoice) => (
-                  <tr key={inv.id} className="group hover:bg-slate-50/50 transition-colors">
+                {filteredInvoices.map((inv) => (
+                  <tr key={inv.invoice_number} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="py-3.5 pl-2">
-                      <Link 
-                        href={`/invoices/${inv.id}`}
+                      <Link
+                        href={`/invoices/${inv.invoice_number}`}
                         className="font-bold text-xs text-[#3E0856] hover:underline"
                       >
-                        {inv.invoiceNo}
+                        {inv.invoice_number ?? '—'}
                       </Link>
                     </td>
                     <td className="py-3.5">
                       <div className="flex flex-col">
-                        <Link 
-                          href={`/vendors/${inv.vendorId}`}
-                          className="text-xs font-bold text-slate-700 hover:text-[#3E0856] hover:underline"
-                        >
-                          {inv.vendorName}
-                        </Link>
-                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight mt-0.5">{inv.vendorGstin}</span>
+                        <span className="text-xs font-bold text-slate-700">
+                          {inv.vendor}
+                        </span>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight mt-0.5">
+                          {inv.vendor_gstin ?? '—'}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3.5 text-xs font-semibold text-slate-500">
-                      {new Date(inv.date).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
+                      {inv.invoice_date || (inv.upload_time ? new Date(inv.upload_time).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
                     </td>
                     <td className="py-3.5 text-right text-xs font-bold text-slate-700">
-                      ₹{inv.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{(inv.total_amount != null ? inv.total_amount : (inv.total != null ? inv.total : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3.5 text-center">
                       <span className="inline-flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                        {inv.confidence}%
+                        {inv.confidence != null ? `${inv.confidence.toFixed(1)}%` : '—'}
                       </span>
                     </td>
                     <td className="py-3.5 text-center">
-                      <span className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
-                        inv.riskScore >= 75 
-                          ? 'bg-rose-50 text-rose-700 border border-rose-100' 
-                          : inv.riskScore >= 30 
-                          ? 'bg-amber-50 text-amber-700 border border-amber-100' 
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                      }`}>
-                        {inv.riskScore}%
-                      </span>
+                      {(() => {
+                        const score = inv.risk_score != null ? inv.risk_score : (inv.risk_level === 'High' ? 85 : inv.risk_level === 'Medium' ? 45 : 10);
+                        return (
+                          <span className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-xs font-bold ${
+                            score >= 75
+                              ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                              : score >= 30
+                              ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                          }`}>
+                            {score}%
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 pr-2 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <RiskBadge status={inv.status} showIcon={false} />
-                        <Link 
-                          href={`/invoices/${inv.id}`}
+                        <RiskBadge status={inv.status as any} showIcon={false} />
+                        <Link
+                          href={`/invoices/${inv.invoice_number}`}
                           className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#3E0856] rounded hover:bg-slate-100 transition-all duration-200"
                         >
                           <ArrowRight className="h-4 w-4" />

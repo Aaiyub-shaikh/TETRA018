@@ -123,15 +123,26 @@ async def upload_invoice(file: UploadFile = File(...)):
             else:
                 status = "High Risk"
 
-            # Insert metadata into invoices
+            # Insert metadata into invoices (full fields for frontend display)
             invoice_doc = {
                 "filename": filename,
                 "upload_time": datetime.utcnow().isoformat(),
+                "created_at": datetime.utcnow().isoformat(),
                 "invoice_number": fields.get("invoice_number"),
                 "vendor": fields.get("vendor_name"),
-                "total": fields.get("total_amount"),
+                "vendor_gstin": fields.get("vendor_gstin"),
+                "invoice_date": fields.get("date"),
+                "taxable_amount": fields.get("taxable_amount", 0.0),
+                "tax_amount": fields.get("tax_amount", 0.0),
+                "total": fields.get("total_amount", 0.0),
+                "total_amount": fields.get("total_amount", 0.0),
                 "risk_level": risk_level,
-                "status": status
+                "risk_score": risk_result.get("risk_score", 0.0),
+                "confidence": risk_result.get("confidence", 100.0),
+                "status": status,
+                "flag_count": risk_result.get("flag_count", 0),
+                "exceptions": risk_result.get("flags", []),
+                "raw_text": raw_text,
             }
             await db["invoices"].insert_one(invoice_doc)
             logger.info("Successfully saved metadata to invoices collection.")
