@@ -153,6 +153,7 @@ LEDGER_COLUMN_MAP = {
     "tax_amount": "tax_amount",
     "total": "total_amount",
     "grand total": "total_amount",
+    "total amount": "total_amount",
     "amount": "total_amount",
     "totalamount": "total_amount",
     "total_amount": "total_amount",
