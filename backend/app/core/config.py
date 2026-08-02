@@ -3,7 +3,7 @@ import os
 try:
     from pydantic_settings import BaseSettings
     class Settings(BaseSettings):
-        PROJECT_NAME: str = "TETRA AI Risk Scanner"
+        PROJECT_NAME: str = "Invexa AI"
         API_V1_STR: str = "/api"
         
         # Upload directories
@@ -41,7 +41,7 @@ except Exception:
     load_dotenv()
     
     class Settings:
-        PROJECT_NAME: str = "TETRA AI Risk Scanner"
+        PROJECT_NAME: str = "Invexa AI"
         API_V1_STR: str = "/api"
         UPLOAD_DIR: str = "uploads"
         TEMP_DIR: str = "uploads/temp"

@@ -58,7 +58,7 @@ def upload_invoice(pdf_bytes: bytes) -> dict:
 
 def main():
     print("=" * 60)
-    print("TETRA AI — Backend Integration Test")
+    print("Invexa AI — Backend Integration Test")
     print("=" * 60)
 
     # --- Test 1: Health ---

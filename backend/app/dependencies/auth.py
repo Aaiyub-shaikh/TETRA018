@@ -60,7 +60,7 @@ async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = 
     If absent, returns a default system engine user context to maintain backward compatibility.
     """
     if not credentials:
-        return {"id": "system", "email": "system@tetra.com", "role": "admin", "full_name": "System Engine"}
+        return {"id": "system", "email": "system@invexa.ai", "role": "admin", "full_name": "System Engine"}
     
     token = credentials.credentials
     payload = decode_access_token(token)
@@ -77,7 +77,7 @@ async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = 
         )
     db = get_database()
     if db is None:
-         return {"id": "system", "email": "system@tetra.com", "role": "admin", "full_name": "System Engine"}
+         return {"id": "system", "email": "system@invexa.ai", "role": "admin", "full_name": "System Engine"}
     
     user = await db["users"].find_one({"email": email})
     if not user:

@@ -112,7 +112,7 @@ export default function DashboardPage() {
             </div>
             <h2 className="text-xl font-bold tracking-tight">Compliance Command Center</h2>
             <p className="text-xs text-purple-200/90 max-w-xl">
-              TETRA Risk Scanner has completed processing for this cycle. We evaluated {totalCount}{' '}
+              Invexa AI has completed processing for this cycle. We evaluated {totalCount}{' '}
               entries, flagging {flaggedCount} anomalies. Verify mismatches or payment routing
               changes below.
             </p>

@@ -164,7 +164,7 @@ class EmailService:
         p.rect(0, height - 60, width, 60, fill=True, stroke=False)
         p.setFillColorRGB(1, 1, 1)
         p.setFont("Helvetica-Bold", 16)
-        p.drawString(50, height - 38, "TETRA — Invoice Risk Analysis Report")
+        p.drawString(50, height - 38, "Invexa AI — Invoice Risk Analysis Report")
 
         y = height - 90
 
@@ -301,7 +301,7 @@ class EmailService:
 
         # Footer
         p.setFont("Helvetica-Oblique", 10)
-        p.drawString(50, max(70, y - 20), "Prepared by TETRA AI Risk Scanner")
+        p.drawString(50, max(70, y - 20), "Prepared by Invexa AI")
 
         p.save()
         buffer.seek(0)

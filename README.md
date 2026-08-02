@@ -1,8 +1,8 @@
-# 🚀 Tetra018 — AI-Powered Financial Consistency & Intelligent Invoice Audit Platform
+# 🚀 Invexa AI — AI-Powered Financial Consistency & Intelligent Invoice Audit Platform
 
 <p align="center">
 
-<img src="assets/banner.png" width="100%"/>
+<img src="frontend/public/asset.jpeg" width="100%"/>
 
 </p>
 
@@ -28,13 +28,13 @@ An Enterprise AI Platform for Automated Invoice Processing, Financial Consistenc
 
 # 📖 Project Overview
 
-Tetra018 is an enterprise-grade AI-powered financial consistency platform built to automate invoice auditing, vendor verification, ledger matching, GST validation, and intelligent financial risk analysis.
+Invexa AI is an enterprise-grade AI-powered financial consistency platform built to automate invoice auditing, vendor verification, ledger matching, GST validation, and intelligent financial risk analysis.
 
 Traditional invoice auditing requires accountants to manually verify hundreds of invoices against vendor masters, purchase ledgers, GST rules, and accounting records. This process is slow, expensive, and prone to human error.
 
-Tetra018 transforms this workflow into a fully automated AI-driven pipeline capable of processing invoices within seconds while providing transparent reasoning for every detected inconsistency.
+Invexa AI transforms this workflow into a fully automated AI-driven pipeline capable of processing invoices within seconds while providing transparent reasoning for every detected inconsistency.
 
-Unlike traditional OCR software, Tetra018 doesn't simply extract text from invoices—it understands financial documents, validates accounting rules, identifies anomalies, explains risks using AI, and allows auditors to interact with every invoice through a conversational AI assistant.
+Unlike traditional OCR software, Invexa AI doesn't simply extract text from invoices—it understands financial documents, validates accounting rules, identifies anomalies, explains risks using AI, and allows auditors to interact with every invoice through a conversational AI assistant.
 
 The platform combines OCR, rule-based validation, explainable AI, conversational intelligence, and comprehensive audit reporting into a single modern financial auditing solution.
 
@@ -63,7 +63,7 @@ These issues increase operational costs while exposing organizations to financia
 
 # 💡 Our Solution
 
-Tetra018 introduces an intelligent multi-stage audit engine capable of:
+Invexa AI introduces an intelligent multi-stage audit engine capable of:
 
 ✅ Extracting invoice data automatically
 
@@ -308,9 +308,9 @@ Dashboard Analytics
 
 ---
 
-# ⚡ Why Tetra018 is Different
+# ⚡ Why Invexa AI is Different
 
-Unlike conventional OCR software that only extracts invoice text, Tetra018 understands the business meaning behind financial documents.
+Unlike conventional OCR software that only extracts invoice text, Invexa AI understands the business meaning behind financial documents.
 
 Every uploaded invoice passes through multiple AI-powered validation engines before receiving an intelligent risk assessment and a fully explainable audit report.
 
@@ -320,7 +320,7 @@ The platform acts as an AI Audit Assistant rather than a simple OCR application.
 
 # 🚀 Full Stack Platform Features
 
-Tetra018 is divided into multiple intelligent modules that work together to automate the complete financial auditing workflow.
+Invexa AI is divided into multiple intelligent modules that work together to automate the complete financial auditing workflow.
 
 ---
 
@@ -442,7 +442,7 @@ Checks include
 
 # 🤖 AI Reasoning Engine
 
-Unlike traditional validation systems that only report errors, Tetra018 explains every inconsistency using AI.
+Unlike traditional validation systems that only report errors, Invexa AI explains every inconsistency using AI.
 
 Example
 
@@ -658,7 +658,7 @@ Security Features
 
 # 💻 Local Development Setup
 
-Tetra018 is built as a modern full-stack application consisting of a **Next.js frontend** and a **FastAPI backend**. Follow the steps below to run the application locally.
+Invexa AI is built as a modern full-stack application consisting of a **Next.js frontend** and a **FastAPI backend**. Follow the steps below to run the application locally.
 
 ---
 
@@ -680,9 +680,9 @@ Before running the project, ensure the following software is installed.
 # 📥 Clone Repository
 
 ```bash
-git clone https://github.com/Aaiyub-shaikh/Tetra018.git
+git clone https://github.com/Aaiyub-shaikh/Invexa AI.git
 
-cd Tetra018
+cd Invexa AI
 ```
 
 ---
@@ -796,7 +796,7 @@ backend/.env
 Example
 
 ```env
-APP_NAME=Tetra018
+APP_NAME=Invexa AI
 
 SECRET_KEY=your_secret_key
 
@@ -804,9 +804,9 @@ JWT_ALGORITHM=HS256
 
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-MONGODB_URI=mongodb:+srv//atlas-server/tetra018
+MONGODB_URI=mongodb:+srv//atlas-server/invexa_ai
 
-DATABASE_NAME=tetra018
+DATABASE_NAME=invexa_ai
 
 UPLOAD_FOLDER=uploads
 
@@ -835,7 +835,7 @@ Use the following credentials to explore the application without creating a new 
 
 | Role | Email | Password |
 |------|-------|----------|
-| Compliance Officer | `compliance@tetra.com` | `password123` |
+| Compliance Officer | `compliance@invexa.ai` | `password123` |
 
 > **Note:** These credentials are for demonstration purposes only and are intended for evaluating the application's features.
 
@@ -844,7 +844,7 @@ Use the following credentials to explore the application without creating a new 
 # 📁 Project Structure
 
 ```text
-Tetra018
+Invexa AI
 │
 ├── backend/
 │   ├── app/
@@ -1175,7 +1175,7 @@ Open Pull Request
 
 # 👨‍💻 Team
 
-## Tetra018
+## Invexa AI
 
 AI-Powered Financial Consistency & Intelligent Invoice Audit Platform
 
@@ -1224,7 +1224,7 @@ This project is licensed under the MIT License.
 ```
 MIT License
 
-Copyright (c) 2026 Tetra018
+Copyright (c) 2026 Invexa AI
 
 Permission is hereby granted, free of charge,
 to any person obtaining a copy of this software...
@@ -1263,8 +1263,8 @@ If you found this project useful,
 
 <p align="center">
 
-Made with ❤️ by Team Tetra018
+Made with ❤️ by Team Invexa AI
 
-Built for **TetraThon Hackathon 2026**
+Built for **InvexaThon Hackathon 2026**
 
 </p>

@@ -189,7 +189,7 @@ export default function AuditPage() {
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF('landscape', 'mm', 'a4');
       doc.setFontSize(14);
-      doc.text('TETRA - Audit Trail Report', 14, 15);
+      doc.text('Invexa AI - Audit Trail Report', 14, 15);
       doc.setFontSize(9);
       doc.text(`Generated: ${new Date().toLocaleString('en-IN')}`, 14, 22);
       doc.text(`Total Events: ${total}`, 14, 28);

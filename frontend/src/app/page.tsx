@@ -238,7 +238,7 @@ export default function LandingPage() {
               Simplified Audit Workflow
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              How TETRA processes document verification cycles from upload to authorization.
+              How Invexa AI processes document verification cycles from upload to authorization.
             </p>
           </div>
 
@@ -329,13 +329,13 @@ export default function LandingPage() {
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold tracking-tight text-slate-800">Trusted by Accounts Teams</h2>
-            <p className="text-xs text-slate-500 font-medium">Hear how finance teams prevent double payments and compliance mistakes using TETRA.</p>
+            <p className="text-xs text-slate-500 font-medium">Hear how finance teams prevent double payments and compliance mistakes using Invexa AI.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs text-slate-500 italic leading-relaxed">
-                &ldquo;TETRA caught a duplicate invoice mismatch worth ₹32 lakhs during our mid-year closing. The layout looked identical to a previous week billing, but sequential number discrepancies were immediately flagged by the AI engine. An invaluable safeguard.&rdquo;
+                &ldquo;Invexa AI caught a duplicate invoice mismatch worth ₹32 lakhs during our mid-year closing. The layout looked identical to a previous week billing, but sequential number discrepancies were immediately flagged by the AI engine. An invaluable safeguard.&rdquo;
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-[#3E0856] text-white flex items-center justify-center font-bold text-[10px]">
@@ -350,7 +350,7 @@ export default function LandingPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs text-slate-500 italic leading-relaxed">
-                &ldquo;Configuring bank details check saved us from payment routing fraud. A supplier invoice came in with modified IFSC/bank numbers. TETRA flagged the anomaly, matching it as a 92% fraudulent redirect risk.&rdquo;
+                &ldquo;Configuring bank details check saved us from payment routing fraud. A supplier invoice came in with modified IFSC/bank numbers. Invexa AI flagged the anomaly, matching it as a 92% fraudulent redirect risk.&rdquo;
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-[#FAAE62] text-[#3E0856] flex items-center justify-center font-bold text-[10px]">
@@ -385,7 +385,7 @@ export default function LandingPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-xs font-bold text-slate-800">Can it connect directly to our ERP system like SAP or Tally?</h3>
               <p className="text-[11px] text-slate-500 leading-relaxed font-medium mt-1.5">
-                Yes. TETRA provides REST API endpoints that hook into ERP workflows. Ledger matches check live data tables to verify Purchase Orders (POs) and vendor bank records.
+                Yes. Invexa AI provides REST API endpoints that hook into ERP workflows. Ledger matches check live data tables to verify Purchase Orders (POs) and vendor bank records.
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -403,7 +403,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <Logo />
           <p className="text-[10px] font-semibold text-slate-400">
-            &copy; 2026 TETRA AI INC. ALL RIGHTS RESERVED. SECURE SOC2 COMPLIANT PLATFORM.
+            &copy; 2026 Invexa AI INC. ALL RIGHTS RESERVED. SECURE SOC2 COMPLIANT PLATFORM.
           </p>
           <div className="flex items-center gap-6 text-[10px] font-bold text-slate-500">
             <a href="#" className="hover:text-[#3E0856]">Privacy Policy</a>

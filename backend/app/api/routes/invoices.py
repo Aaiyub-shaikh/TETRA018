@@ -168,7 +168,7 @@ async def get_invoice_report(invoice_id: str):
         p.rect(0, height - 60, width, 60, fill=True, stroke=False)
         p.setFillColorRGB(1, 1, 1)
         p.setFont("Helvetica-Bold", 16)
-        p.drawString(50, height - 38, "TETRA — Invoice Report")
+        p.drawString(50, height - 38, "Invexa AI — Invoice Report")
 
         y = height - 90
         p.setFillColorRGB(0, 0, 0)

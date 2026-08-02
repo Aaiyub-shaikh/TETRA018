@@ -51,13 +51,13 @@ async def seed_users():
     if db is None:
         return
     try:
-        existing = await db["users"].find_one({"email": "compliance@tetra.com"})
+        existing = await db["users"].find_one({"email": "compliance@invexa.ai"})
         if not existing:
             from app.core.security import get_password_hash
             from datetime import datetime
             
             default_user = {
-                "email": "compliance@tetra.com",
+                "email": "compliance@invexa.ai",
                 "password": get_password_hash("password123"),
                 "full_name": "Compliance Officer",
                 "role": "admin",

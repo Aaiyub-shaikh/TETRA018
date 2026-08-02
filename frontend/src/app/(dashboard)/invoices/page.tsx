@@ -103,7 +103,7 @@ export default function InvoicesPage() {
     if (filteredInvoices.length === 0) { setError('No invoices to export'); return; }
     try {
       const lines: string[] = [
-        'TETRA Invoice Summary Report',
+        'Invexa AI Invoice Summary Report',
         `Generated: ${new Date().toLocaleString('en-IN')}`,
         `Total Invoices: ${filteredInvoices.length}`,
         '',
@@ -119,7 +119,7 @@ export default function InvoicesPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `TETRA_Invoice_Summary_${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `Invexa_Invoice_Summary_${new Date().toISOString().slice(0,10)}.txt`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
@@ -146,7 +146,7 @@ export default function InvoicesPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `TETRA_Invoices_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `Invexa_Invoices_${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {

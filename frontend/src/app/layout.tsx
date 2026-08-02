@@ -14,9 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'TETRA AI — Invoice Risk Scanner & Auditor',
+  title: 'Invexa AI — Invoice Risk Scanner & Auditor',
   description:
     'Detect duplicate invoices, GST inconsistencies, ledger mismatches, and compliance anomalies in seconds using enterprise-grade AI risk detection.',
+  icons: {
+    icon: '/favicon.jpeg',
+  },
 };
 
 export default function RootLayout({

@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
     if (pathname === '/reports') return 'Financial Reports';
     if (pathname === '/settings') return 'Account Settings';
     if (pathname === '/audit') return 'Audit Ledger';
-    return 'TETRA Risk Scanner';
+    return 'Invexa AI';
   };
 
   return (

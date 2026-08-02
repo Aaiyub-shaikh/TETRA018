@@ -30,7 +30,7 @@ export default function LoginPage() {
   } = useForm<LoginFormInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'compliance@tetra.com',
+      email: 'compliance@invexa.ai',
       password: 'password123',
       rememberMe: true,
     },

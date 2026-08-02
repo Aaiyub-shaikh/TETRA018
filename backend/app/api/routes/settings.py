@@ -10,7 +10,7 @@ from app.services.audit_trail.logger import log_event
 router = APIRouter()
 
 DEFAULT_SETTINGS = {
-    "organization": "Tetra Invoice Scanner",
+    "organization": "Invexa AI",
     "currency": "INR",
     "timezone": "Asia/Kolkata",
     "date_format": "DD/MM/YYYY",

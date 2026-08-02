@@ -5,7 +5,7 @@ import hashlib
 import time
 import os
 
-SECRET_KEY = os.getenv("JWT_SECRET", "tetra_invoice_risk_scanner_jwt_secret_key_2026")
+SECRET_KEY = os.getenv("JWT_SECRET", "invexa_ai_jwt_secret_key_2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECONDS = 86400  # 24 hours
 
