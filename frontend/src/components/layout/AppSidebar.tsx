@@ -38,7 +38,7 @@ export const AppSidebar: React.FC = () => {
   ];
 
   const bottomItems = [
-    { name: 'Profile', href: '/settings?tab=profile', icon: User },
+    { name: 'Profile', href: '/profile', icon: User },
   ];
 
   return (
@@ -90,7 +90,7 @@ export const AppSidebar: React.FC = () => {
       {/* Bottom Profile, Issues Badge and Logout Actions */}
       <div className="border-t border-slate-100 p-4 space-y-2">
         {bottomItems.map((item) => {
-          const isActive = pathname.startsWith('/settings') && pathname.includes('tab=profile');
+          const isActive = pathname === '/profile' || pathname.startsWith('/profile/');
           const Icon = item.icon;
 
           return (

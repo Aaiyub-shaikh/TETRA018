@@ -455,3 +455,138 @@ export async function chatAboutInvoice(invoiceId: string, question: string): Pro
     body: JSON.stringify({ invoice_id: invoiceId, question }),
   });
 }
+
+// ─── Profile ─────────────────────────────────────────────────────────────
+
+export interface ProfileData {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  phone: string;
+  department: string;
+  designation: string;
+  organization: string;
+  employee_id: string;
+  profile_image: string;
+  joined_at: string;
+  last_login: string;
+  account_status: string;
+  stats: {
+    total_invoices_scanned: number;
+    high_risk_reviewed: number;
+    reports_generated: number;
+    emails_sent: number;
+    last_activity: string;
+  };
+  recent_invoices: any[];
+  recent_activity: any[];
+  recent_emails: any[];
+}
+
+export async function fetchProfile(): Promise<ProfileData> {
+  return apiFetch('/api/profile');
+}
+
+export async function updateProfile(payload: {
+  full_name?: string;
+  phone?: string;
+  department?: string;
+  designation?: string;
+  organization?: string;
+}): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/api/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadProfilePhoto(file: File): Promise<{ success: boolean; profile_image: string }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const formData = new FormData();
+  formData.append('file', file);
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/api/profile/photo`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Upload failed');
+  }
+  return res.json();
+}
+
+export async function changePassword(payload: {
+  current_password: string;
+  new_password: string;
+}): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/api/profile/change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────
+
+export interface AppSettings {
+  _id?: string;
+  organization: string;
+  currency: string;
+  timezone: string;
+  date_format: string;
+  language: string;
+  ai: {
+    enabled: boolean;
+    model: string;
+    temperature: number;
+    max_tokens: number;
+    prompt_style: string;
+  };
+  ocr: {
+    engine: string;
+    language: string;
+    confidence: number;
+    image_enhancement: boolean;
+    auto_rotation: boolean;
+  };
+  risk: {
+    threshold: number;
+    duplicate_detection: boolean;
+    gst_validation: boolean;
+    vendor_validation: boolean;
+    ledger_matching: boolean;
+  };
+  email: {
+    smtp_server: string;
+    smtp_port: number;
+    sender_email: string;
+    reply_email: string;
+    notifications_enabled: boolean;
+    auto_send_report: boolean;
+  };
+  notifications: {
+    browser_notifications: boolean;
+    email_alerts: boolean;
+    invoice_completion: boolean;
+    risk_alerts: boolean;
+  };
+  security: {
+    session_timeout: number;
+    two_factor_enabled: boolean;
+  };
+  [key: string]: any;
+}
+
+export async function fetchSettings(): Promise<AppSettings> {
+  return apiFetch('/api/settings');
+}
+
+export async function updateSettings(payload: Partial<AppSettings>): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}

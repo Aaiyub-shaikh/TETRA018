@@ -1,10 +1,12 @@
 from fastapi import APIRouter
-from app.api.routes import auth, health, upload, invoices, vendors, dashboard, reports, audit, ledger, email, chat, audit_trail
+from app.api.routes import auth, health, upload, invoices, vendors, dashboard, reports, audit, ledger, email, chat, audit_trail, profile, settings
 
 api_router = APIRouter()
 
 api_router.include_router(health.router, tags=["Health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(profile.router, tags=["Profile"])
+api_router.include_router(settings.router, tags=["Settings"])
 api_router.include_router(upload.router, tags=["Ingestion"])
 api_router.include_router(invoices.router, tags=["Invoices"])
 api_router.include_router(vendors.router, tags=["Vendors"])
