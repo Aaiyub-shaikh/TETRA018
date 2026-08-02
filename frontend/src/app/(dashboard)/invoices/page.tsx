@@ -7,6 +7,7 @@ import { fetchInvoices, BASE_URL, type InvoiceRecord, inv_invoiceNumber, inv_ven
 import RiskBadge from '@/components/common/RiskBadge';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
+import Pagination from '@/components/common/Pagination';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -40,16 +41,20 @@ export default function InvoicesPage() {
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'riskScore'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadInvoices = (searchVal = searchTerm, statusVal = statusFilter, riskVal = riskFilter) => {
+  const loadInvoices = (searchVal = searchTerm, statusVal = statusFilter, riskVal = riskFilter, page = currentPage) => {
     setLoading(true);
     fetchInvoices({
       search: searchVal,
       status: statusVal,
-      risk: riskVal
+      risk: riskVal,
+      page,
     })
       .then((res) => {
         setInvoices(res.invoices || []);
+        setTotalPages(res.total_pages || 1);
         setError(null);
       })
       .catch((err) => {
@@ -150,11 +155,15 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, riskFilter]);
+
+  useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      loadInvoices(searchTerm, statusFilter, riskFilter);
+      loadInvoices(searchTerm, statusFilter, riskFilter, currentPage);
     }, 300);
     return () => clearTimeout(delayDebounce);
-  }, [searchTerm, statusFilter, riskFilter]);
+  }, [currentPage, searchTerm, statusFilter, riskFilter]);
 
   // Sort logic (filtering is done on backend)
   const filteredInvoices = useMemo(() => {
@@ -282,6 +291,7 @@ export default function InvoicesPage() {
             setRiskFilter('ALL');
             setSortBy('date');
             setSortOrder('desc');
+            setCurrentPage(1);
           }}
           className="lg:col-span-1 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 text-xs font-bold text-slate-500 py-2.5 transition-colors cursor-pointer"
         >
@@ -413,6 +423,15 @@ export default function InvoicesPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && filteredInvoices.length > 0 && totalPages > 1 && (
+          <div className="mt-4 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>

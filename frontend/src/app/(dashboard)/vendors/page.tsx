@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, AlertTriangle, X, Plus, Upload } from 'lucide-react';
 import { fetchVendors, addVendor, importVendors, type VendorRecord } from '@/lib/api';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
+import Pagination from '@/components/common/Pagination';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -200,12 +201,15 @@ export default function VendorsPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadVendors = () => {
+  const loadVendors = (page = 1, search?: string, status?: string) => {
     setLoading(true);
-    fetchVendors()
+    fetchVendors(page, search, status !== 'ALL' ? status : undefined)
       .then((res) => {
         setVendors(res.vendors || []);
+        setTotalPages(res.total_pages || 1);
         setToast(null);
       })
       .catch((err) => {
@@ -217,7 +221,7 @@ export default function VendorsPage() {
   };
 
   useEffect(() => {
-    loadVendors();
+    loadVendors(1);
   }, []);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +234,7 @@ export default function VendorsPage() {
         message: `Vendor Master imported successfully. ${result.rows_imported} added, ${result.duplicates_skipped} duplicates skipped, ${result.errors} errors.`,
         type: 'success',
       });
-      loadVendors();
+      loadVendors(1, searchTerm, statusFilter);
     } catch (err: any) {
       setToast({ message: err.message || 'Import failed', type: 'error' });
     } finally {
@@ -239,20 +243,16 @@ export default function VendorsPage() {
     }
   };
 
-  const filteredVendors = useMemo(() => {
-    return vendors.filter((vendor) => {
-      const name = vendor.vendor || '';
-      const gstin = vendor.gstin || '';
-      
-      const matchesSearch =
-        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gstin.toLowerCase().includes(searchTerm.toLowerCase());
+  const handleSearch = () => {
+    setCurrentPage(1);
+    loadVendors(1, searchTerm, statusFilter);
+  };
 
-      const matchesStatus = statusFilter === 'ALL' || vendor.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [vendors, searchTerm, statusFilter]);
+  const handleStatusChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+    loadVendors(1, searchTerm, val);
+  };
 
   const getStatusStyle = (status: string) => {
     if (status === 'Active') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
@@ -270,7 +270,7 @@ export default function VendorsPage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           setToast({ message: 'Vendor added successfully!', type: 'success' });
-          loadVendors();
+      loadVendors(1, searchTerm, statusFilter);
         }}
       />
 
@@ -319,6 +319,7 @@ export default function VendorsPage() {
             placeholder="Search vendor name, GSTIN..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-xs outline-none transition-all focus:border-[#3E0856] focus:bg-white focus:ring-1 focus:ring-[#3E0856]"
           />
         </div>
@@ -327,7 +328,7 @@ export default function VendorsPage() {
         <div className="relative lg:col-span-3">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-xs outline-none appearance-none transition-all focus:border-[#3E0856] focus:bg-white cursor-pointer"
           >
             <option value="ALL">All Statuses</option>
@@ -343,6 +344,8 @@ export default function VendorsPage() {
           onClick={() => {
             setSearchTerm('');
             setStatusFilter('ALL');
+            setCurrentPage(1);
+            loadVendors(1, '', 'ALL');
           }}
           className="lg:col-span-2 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 text-xs font-bold text-slate-500 py-2.5 transition-colors cursor-pointer"
         >
@@ -354,7 +357,7 @@ export default function VendorsPage() {
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm min-h-[200px] flex flex-col justify-center">
         {loading ? (
           <Loader size="md" label="Loading vendor directory..." />
-        ) : filteredVendors.length === 0 ? (
+        ) : vendors.length === 0 ? (
           <EmptyState
             title="No vendors matched"
             description="Adjust your search criteria or register a new vendor profile using the button above."
@@ -372,7 +375,7 @@ export default function VendorsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60">
-                {filteredVendors.map((vendor, index) => (
+                {vendors.map((vendor, index) => (
                   <tr key={index} className="group hover:bg-slate-50/50 transition-colors text-xs">
                     <td className="py-3.5 pl-2 font-bold text-slate-700">
                       {vendor.vendor}
@@ -386,6 +389,16 @@ export default function VendorsPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {!loading && vendors.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              loadVendors(page, searchTerm, statusFilter);
+            }}
+          />
         )}
       </div>
     </div>

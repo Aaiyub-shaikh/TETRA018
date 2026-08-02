@@ -17,14 +17,33 @@ class VendorCreate(BaseModel):
     address: Optional[str] = ""
 
 @router.get("/vendors", summary="List all vendors from master")
-async def list_vendors():
+async def list_vendors(
+    page: int = 1,
+    page_size: int = 10,
+    search: str = None,
+    status: str = None,
+):
     db = get_database()
     if db is None:
         return {"vendors": [], "total": 0}
     try:
-        cursor = db["vendor_master"].find({}, {"_id": 0})
-        vendors = await cursor.to_list(length=100)
-        return {"vendors": vendors, "total": len(vendors)}
+        query = {}
+        if search:
+            search_regex = {"$regex": search, "$options": "i"}
+            query["$or"] = [
+                {"vendor": search_regex},
+                {"gstin": search_regex},
+                {"email": search_regex},
+                {"phone": search_regex},
+                {"address": search_regex},
+            ]
+        if status and status != "ALL":
+            query["status"] = status
+
+        total = await db["vendor_master"].count_documents(query)
+        cursor = db["vendor_master"].find(query, {"_id": 0}).sort("created_at", -1).skip((page - 1) * page_size).limit(page_size)
+        vendors = await cursor.to_list(length=page_size)
+        return {"vendors": vendors, "total": total, "page": page, "page_size": page_size, "total_pages": (total + page_size - 1) // page_size}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
 

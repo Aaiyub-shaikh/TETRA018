@@ -5,6 +5,7 @@ import { BookOpen, AlertTriangle, CheckCircle2, ShieldCheck, Scale, RefreshCw, X
 import { fetchLedger, addLedger, importLedger, type LedgerRecord } from '@/lib/api';
 import EmptyState from '@/components/common/EmptyState';
 import Loader from '@/components/common/Loader';
+import Pagination from '@/components/common/Pagination';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -216,13 +217,17 @@ export default function LedgerPage() {
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const loadLedger = () => {
+  const loadLedger = (page?: number) => {
     setLoading(true);
-    fetchLedger()
+    const pageToLoad = page ?? currentPage;
+    fetchLedger(pageToLoad)
       .then((res) => {
         setLedgerMatches(res.entries || []);
+        setTotalPages(res.total_pages || 1);
         setToast(null);
       })
       .catch((err) => {
@@ -247,7 +252,8 @@ export default function LedgerPage() {
         message: `Purchase Ledger imported successfully. ${result.rows_imported} added, ${result.duplicates_skipped} duplicates skipped, ${result.errors} errors.`,
         type: 'success',
       });
-      loadLedger();
+      setCurrentPage(1);
+      loadLedger(1);
     } catch (err: any) {
       setToast({ message: err.message || 'Import failed', type: 'error' });
     } finally {
@@ -290,7 +296,8 @@ export default function LedgerPage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           setToast({ message: 'Ledger entry added successfully!', type: 'success' });
-          loadLedger();
+          setCurrentPage(1);
+          loadLedger(1);
         }}
       />
 
@@ -433,6 +440,18 @@ export default function LedgerPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && ledgerMatches.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                loadLedger(page);
+              }}
+            />
           </div>
         )}
       </div>

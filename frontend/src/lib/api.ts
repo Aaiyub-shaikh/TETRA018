@@ -284,7 +284,7 @@ export async function uploadInvoice(
 
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
-export async function fetchInvoices(filters?: { search?: string; status?: string; risk?: string; vendor?: string; date?: string }): Promise<{ invoices: InvoiceRecord[]; total: number }> {
+export async function fetchInvoices(filters?: { search?: string; status?: string; risk?: string; vendor?: string; date?: string; page?: number }): Promise<{ invoices: InvoiceRecord[]; total: number; page: number; page_size: number; total_pages: number }> {
   let url = '/api/invoices';
   const params: string[] = [];
   if (filters) {
@@ -293,6 +293,7 @@ export async function fetchInvoices(filters?: { search?: string; status?: string
     if (filters.risk) params.push(`risk=${encodeURIComponent(filters.risk)}`);
     if (filters.vendor) params.push(`vendor=${encodeURIComponent(filters.vendor)}`);
     if (filters.date) params.push(`date=${encodeURIComponent(filters.date)}`);
+    if (filters.page) params.push(`page=${encodeURIComponent(String(filters.page))}`);
   }
   if (params.length > 0) {
     url += '?' + params.join('&');
@@ -302,8 +303,13 @@ export async function fetchInvoices(filters?: { search?: string; status?: string
 
 // ─── Vendors ─────────────────────────────────────────────────────────────────
 
-export async function fetchVendors(): Promise<{ vendors: VendorRecord[]; total: number }> {
-  return apiFetch('/api/vendors');
+export async function fetchVendors(page?: number, search?: string, status?: string): Promise<{ vendors: VendorRecord[]; total: number; page: number; page_size: number; total_pages: number }> {
+  const p: string[] = [];
+  if (page) p.push(`page=${page}`);
+  if (search) p.push(`search=${encodeURIComponent(search)}`);
+  if (status && status !== 'ALL') p.push(`status=${encodeURIComponent(status)}`);
+  const qs = p.length ? `?${p.join('&')}` : '';
+  return apiFetch(`/api/vendors${qs}`);
 }
 
 export async function sendInvoiceReport(invoiceId: string, email: string): Promise<{ success: boolean; message: string }> {
@@ -322,8 +328,12 @@ export async function addVendor(payload: AddVendorPayload): Promise<{ success: b
 
 // ─── Ledger ───────────────────────────────────────────────────────────────────
 
-export async function fetchLedger(): Promise<{ entries: LedgerRecord[]; total: number }> {
-  return apiFetch('/api/ledger');
+export async function fetchLedger(page?: number): Promise<{ entries: LedgerRecord[]; total: number; page: number; page_size: number; total_pages: number }> {
+  let url = '/api/ledger';
+  if (page) {
+    url += `?page=${encodeURIComponent(String(page))}`;
+  }
+  return apiFetch(url);
 }
 
 export async function addLedger(payload: AddLedgerPayload): Promise<{ success: boolean; entry: LedgerRecord }> {

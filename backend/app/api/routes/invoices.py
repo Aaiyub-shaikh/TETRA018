@@ -19,7 +19,8 @@ async def list_invoices(
     risk: str = None,
     vendor: str = None,
     date: str = None,
-    limit: int = 100
+    page: int = 1,
+    page_size: int = 10
 ):
     db = get_database()
     if db is None:
@@ -102,8 +103,8 @@ async def list_invoices(
             else:
                 query = {"$and": filters_list}
 
-        cursor = db["invoices"].find(query).sort("invoiceDate", -1).limit(limit * 3)
-        raw_invoices = await cursor.to_list(length=limit * 3)
+        cursor = db["invoices"].find(query).sort("invoiceDate", -1)
+        raw_invoices = await cursor.to_list(length=2000)
 
         # Enrich with audit_results data
         for inv in raw_invoices:
@@ -130,23 +131,10 @@ async def list_invoices(
                 else:
                     inv["status"] = "Passed"
 
-        # Deduplicate: keep the document with the most fields per invoiceNumber
-        seen = {}
-        for inv in raw_invoices:
-            inv_no = inv.get("invoiceNumber") or inv.get("invoice_number") or inv.get("invoiceNo")
-            if not inv_no:
-                continue
-            existing = seen.get(inv_no)
-            if not existing:
-                seen[inv_no] = inv
-            else:
-                # Keep the one with more fields (richer data)
-                if len(inv.keys()) > len(existing.keys()):
-                    seen[inv_no] = inv
+        total = len(raw_invoices)
+        invoices = raw_invoices[(page - 1) * page_size : page * page_size]
 
-        invoices = list(seen.values())[:limit]
-
-        return {"invoices": invoices, "total": len(invoices)}
+        return {"invoices": invoices, "total": total, "page": page, "page_size": page_size, "total_pages": (total + page_size - 1) // page_size}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
 

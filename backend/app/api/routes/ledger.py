@@ -18,7 +18,10 @@ class LedgerEntry(BaseModel):
     taxAmount: Optional[float] = 0.0
 
 @router.get("/ledger", summary="List all purchase ledger entries")
-async def list_ledger():
+async def list_ledger(
+    page: int = 1,
+    page_size: int = 10
+):
     db = get_database()
     if db is None:
         return {"entries": [], "total": 0}
@@ -89,7 +92,9 @@ async def list_ledger():
             else:
                 entry["status"] = "Reconciled"
 
-        return {"entries": entries, "total": len(entries)}
+        total = len(entries)
+        paginated = entries[(page - 1) * page_size : page * page_size]
+        return {"entries": paginated, "total": total, "page": page, "page_size": page_size, "total_pages": (total + page_size - 1) // page_size}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e}")
 
