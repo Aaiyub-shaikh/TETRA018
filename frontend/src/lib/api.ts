@@ -396,6 +396,57 @@ export async function fetchAuditTrail(limit = 50, search?: string, severity?: st
   return apiFetch(url);
 }
 
+// ─── Audit Trail ──────────────────────────────────────────────────────────────
+
+export interface AuditTrailEvent {
+  _id: string;
+  invoice_id?: string;
+  invoice_number: string;
+  event_type: string;
+  title: string;
+  description: string;
+  status: string;
+  severity: string;
+  module: string;
+  performed_by: string;
+  timestamp: string;
+  metadata: Record<string, any>;
+}
+
+export async function fetchAuditTrailEvents(params: {
+  search?: string;
+  severity?: string;
+  status?: string;
+  event_type?: string;
+  module?: string;
+  date_from?: string;
+  date_to?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ events: AuditTrailEvent[]; total: number }> {
+  let url = '/api/audit-trail?';
+  const p: string[] = [];
+  if (params.search) p.push(`search=${encodeURIComponent(params.search)}`);
+  if (params.severity) p.push(`severity=${encodeURIComponent(params.severity)}`);
+  if (params.status) p.push(`status=${encodeURIComponent(params.status)}`);
+  if (params.event_type) p.push(`event_type=${encodeURIComponent(params.event_type)}`);
+  if (params.module) p.push(`module=${encodeURIComponent(params.module)}`);
+  if (params.date_from) p.push(`date_from=${encodeURIComponent(params.date_from)}`);
+  if (params.date_to) p.push(`date_to=${encodeURIComponent(params.date_to)}`);
+  if (params.limit) p.push(`limit=${params.limit}`);
+  if (params.offset) p.push(`offset=${params.offset}`);
+  url += p.join('&');
+  return apiFetch(url);
+}
+
+export async function fetchRecentAuditEvents(): Promise<{ events: AuditTrailEvent[]; total: number }> {
+  return apiFetch('/api/audit-trail/recent');
+}
+
+export async function fetchInvoiceAuditTrail(invoiceId: string): Promise<{ events: AuditTrailEvent[]; total: number }> {
+  return apiFetch(`/api/audit-trail/${encodeURIComponent(invoiceId)}`);
+}
+
 // ─── AI Chat ─────────────────────────────────────────────────────────────
 
 export async function chatAboutInvoice(invoiceId: string, question: string): Promise<{ answer: string; invoice_id: string }> {

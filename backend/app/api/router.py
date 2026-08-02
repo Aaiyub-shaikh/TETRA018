@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.routes import auth, health, upload, invoices, vendors, dashboard, reports, audit, ledger, email, chat
+from app.api.routes import auth, health, upload, invoices, vendors, dashboard, reports, audit, ledger, email, chat, audit_trail
 
 api_router = APIRouter()
 
@@ -14,4 +14,5 @@ api_router.include_router(reports.router, tags=["Reports"])
 api_router.include_router(email.router, tags=["Email"])
 api_router.include_router(chat.router, tags=["AI Chat"])
 api_router.include_router(audit.router, prefix="/v1/audit", tags=["Audit Engine"])
-api_router.include_router(audit.router, prefix="/audit", tags=["Audit Trail"], include_in_schema=False)
+api_router.include_router(audit.router, prefix="/audit", tags=["Audit Trail Legacy"], include_in_schema=False)
+api_router.include_router(audit_trail.router, tags=["Audit Trail"])

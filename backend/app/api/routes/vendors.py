@@ -5,6 +5,7 @@ from app.database.mongodb import get_database
 from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
 from app.services.import_service import parse_file, map_vendor_columns
+from app.services.audit_trail.logger import log_event
 
 router = APIRouter()
 
@@ -109,6 +110,16 @@ async def import_vendors(file: UploadFile = File(...)):
                 rows_imported += 1
             except Exception:
                 errors += 1
+
+        await log_event(
+            event_type="vendor_imported",
+            title="Vendor Imported",
+            description=f"Vendor import completed: {rows_imported} added, {duplicates_skipped} duplicates skipped.",
+            severity="INFO",
+            status="SUCCESS",
+            module="Vendor Import",
+            metadata={"rows_imported": rows_imported, "duplicates_skipped": duplicates_skipped, "errors": errors},
+        )
 
         return {
             "success": True,

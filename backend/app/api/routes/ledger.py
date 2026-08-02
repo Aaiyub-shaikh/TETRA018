@@ -5,6 +5,7 @@ from app.database.mongodb import get_database
 from app.dependencies.auth import get_current_user_optional
 from datetime import datetime
 from app.services.import_service import parse_file, map_ledger_columns
+from app.services.audit_trail.logger import log_event
 
 router = APIRouter()
 
@@ -148,8 +149,9 @@ async def import_ledger(file: UploadFile = File(...)):
 
                 def safe_float(val):
                     try:
-                        v = str(val).replace(",", "").replace("₹", "").replace("Rs", "").replace(".", "", 1) if val else 0
-                        return float(v)
+                        if not val:
+                            return 0.0
+                        return float(str(val).replace(",", "").replace("₹", "").replace("Rs", "").strip())
                     except (ValueError, TypeError):
                         return 0.0
 
@@ -166,6 +168,16 @@ async def import_ledger(file: UploadFile = File(...)):
                 rows_imported += 1
             except Exception:
                 errors += 1
+
+        await log_event(
+            event_type="ledger_imported",
+            title="Purchase Ledger Imported",
+            description=f"Ledger import completed: {rows_imported} added, {duplicates_skipped} duplicates skipped.",
+            severity="INFO",
+            status="SUCCESS",
+            module="Ledger Import",
+            metadata={"rows_imported": rows_imported, "duplicates_skipped": duplicates_skipped, "errors": errors},
+        )
 
         return {
             "success": True,
